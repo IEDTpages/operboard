@@ -101,20 +101,69 @@ def parse_date(value: Any) -> date | None:
         return value.date()
     if isinstance(value, date):
         return value
-    if isinstance(value, (int, float)) and value > 10_000_000_000:
+    if isinstance(value, (int, float)):
+        # Web charts may expose Unix time either in seconds or milliseconds.
         try:
-            return datetime.fromtimestamp(value / 1000, timezone.utc).date()
-        except (OverflowError, OSError, ValueError):
+            timestamp = float(value)
+            if timestamp > 10_000_000_000:
+                timestamp /= 1000
+            if timestamp > 100_000_000:
+                return datetime.fromtimestamp(timestamp, timezone.utc).date()
+        except (OverflowError, OSError, ValueError, TypeError):
             return None
 
-    text = str(value).strip()[:40]
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d"):
-        try:
-            return datetime.strptime(text[:10], fmt).date()
-        except ValueError:
-            pass
+    text = str(value).strip().replace("\xa0", " ")[:80]
+    text = re.sub(r"\s+", " ", text)
+
+    # Russian month names are not reliably parsed on systems without a Russian locale.
+    russian_months = {
+        "янв": 1, "январ": 1,
+        "фев": 2, "феврал": 2,
+        "мар": 3, "март": 3,
+        "апр": 4, "апрел": 4,
+        "май": 5, "мая": 5,
+        "июн": 6, "июнь": 6, "июня": 6,
+        "июл": 7, "июль": 7, "июля": 7,
+        "авг": 8, "август": 8,
+        "сен": 9, "сент": 9, "сентябр": 9,
+        "окт": 10, "октябр": 10,
+        "ноя": 11, "нояб": 11, "ноябр": 11,
+        "дек": 12, "декабр": 12,
+    }
+    lowered = text.lower().replace("ё", "е")
+    match = re.search(r"(?<!\d)(\d{1,2})[ .-]+([а-я]+)\.?[ ,.-]+(\d{2,4})(?!\d)", lowered)
+    if match:
+        day_value = int(match.group(1))
+        month_word = match.group(2)
+        year_value = int(match.group(3))
+        if year_value < 100:
+            year_value += 2000
+        month_value = next(
+            (number for word, number in russian_months.items() if month_word.startswith(word)),
+            None,
+        )
+        if month_value:
+            try:
+                return date(year_value, month_value, day_value)
+            except ValueError:
+                return None
+
+    formats = (
+        "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d",
+        "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y",
+        "%d.%m.%y", "%d/%m/%y", "%d-%m-%y",
+        "%m/%d/%Y", "%m/%d/%y", "%Y%m%d",
+    )
+    candidates = [text, text[:10], text[:8]]
+    for candidate in candidates:
+        for fmt in formats:
+            try:
+                return datetime.strptime(candidate, fmt).date()
+            except ValueError:
+                pass
     try:
-        return pd.to_datetime(text, dayfirst=True, errors="raise").date()
+        parsed = pd.to_datetime(text, dayfirst=True, errors="raise")
+        return parsed.date()
     except Exception:  # noqa: BLE001
         return None
 
@@ -294,17 +343,92 @@ def fetch_bizon() -> tuple[list[str], list[float | int]]:
     return dates, values
 
 
+def _normalise_header(value: Any) -> str:
+    text = str(value or "").strip().lower().replace("ё", "е")
+    return re.sub(r"\s+", " ", text)
+
+
 def parse_profinance_rows(rows: list[list[str]], source_name: str) -> tuple[list[str], list[float | int]]:
-    parsed: list[tuple[date, float]] = []
-    for cells in rows:
-        if len(cells) < 2:
+    """Parse a ProFinance history table without relying on fixed visible-cell layout."""
+    clean_rows: list[list[str]] = []
+    for row in rows:
+        if not isinstance(row, list):
             continue
-        row_date = parse_date(cells[0])
-        # Original Power Query uses the Close column, which is the last column.
-        value = to_number(cells[-1])
-        if row_date and value is not None:
+        cells = [str(cell or "").strip() for cell in row]
+        if any(cells):
+            clean_rows.append(cells)
+
+    if not clean_rows:
+        raise RuntimeError(f"{source_name}: DOM-таблица найдена, но все ячейки пусты")
+
+    header_index: int | None = None
+    date_index: int | None = None
+    close_index: int | None = None
+    date_names = ("дата", "время", "date", "time")
+    close_names = ("close", "закрытие", "последняя", "последнее", "цена", "last")
+
+    for row_index, cells in enumerate(clean_rows[:8]):
+        headers = [_normalise_header(cell) for cell in cells]
+        possible_date = next(
+            (index for index, header in enumerate(headers) if any(name in header for name in date_names)),
+            None,
+        )
+        possible_close = next(
+            (index for index, header in enumerate(headers) if any(name in header for name in close_names)),
+            None,
+        )
+        if possible_date is not None or possible_close is not None:
+            header_index = row_index
+            date_index = possible_date
+            close_index = possible_close
+            break
+
+    parsed: list[tuple[date, float]] = []
+    data_rows = clean_rows[(header_index + 1) if header_index is not None else 0 :]
+    for cells in data_rows:
+        row_date: date | None = None
+        current_date_index: int | None = date_index
+        if current_date_index is not None and current_date_index < len(cells):
+            row_date = parse_date(cells[current_date_index])
+        if row_date is None:
+            for index, cell in enumerate(cells):
+                candidate = parse_date(cell)
+                if candidate is not None and 1990 <= candidate.year <= date.today().year + 2:
+                    row_date = candidate
+                    current_date_index = index
+                    break
+        if row_date is None:
+            continue
+
+        value: float | None = None
+        if close_index is not None and close_index < len(cells):
+            value = to_number(cells[close_index])
+
+        # Historical ProFinance tables traditionally place Close in the fifth column.
+        # Prefer that position, then fall back to the last numeric cell after the date.
+        if value is None and len(cells) >= 5:
+            value = to_number(cells[4])
+        if value is None:
+            numeric_candidates: list[float] = []
+            for index, cell in enumerate(cells):
+                if index == current_date_index:
+                    continue
+                number = to_number(cell)
+                if number is not None:
+                    numeric_candidates.append(number)
+            if numeric_candidates:
+                value = numeric_candidates[-1]
+
+        if value is not None:
             parsed.append((row_date, value))
+
     dates, values = pack_series(parsed)
+    if not dates:
+        sample = json.dumps(clean_rows[:5], ensure_ascii=False)[:1800]
+        raise RuntimeError(
+            f"{source_name}: не удалось распознать даты/Close; "
+            f"rows={len(clean_rows)}; sample={sample}"
+        )
     validate_numeric_series(dates, values, source_name)
     return dates, values
 
@@ -316,29 +440,75 @@ def fetch_profinance_requests(url: str, source_name: str) -> tuple[list[str], li
     if table is None:
         raise RuntimeError("table#table_history отсутствует в HTTP-ответе")
     rows = [
-        [cell.get_text(" ", strip=True) for cell in table_row.select("th,td")]
+        [
+            cell.get_text(" ", strip=True)
+            or cell.get("data-value", "")
+            or cell.get("value", "")
+            or cell.get("title", "")
+            for cell in table_row.select("th,td")
+        ]
         for table_row in table.select("tr")
     ]
     return parse_profinance_rows(rows, source_name)
 
 
-def fetch_profinance_browser(page: Page, url: str, source_name: str) -> tuple[list[str], list[float | int]]:
-    page.goto(url, wait_until="domcontentloaded", timeout=90_000)
-    try:
-        page.wait_for_load_state("networkidle", timeout=20_000)
-    except Exception:  # noqa: BLE001 - some pages keep analytics connections open
-        pass
-    page.wait_for_selector("table#table_history tr", state="attached", timeout=60_000)
+def _browser_table_rows(page: Page) -> list[list[str]]:
     rows = page.locator("table#table_history tr").evaluate_all(
-        """
+        r"""
         rows => rows.map(row =>
-          Array.from(row.querySelectorAll('th,td')).map(cell => cell.innerText.trim())
+          Array.from(row.querySelectorAll('th,td')).map(cell => {
+            const candidates = [
+              cell.textContent,
+              cell.innerText,
+              cell.getAttribute('data-value'),
+              cell.getAttribute('data-val'),
+              cell.getAttribute('value'),
+              cell.getAttribute('title'),
+              cell.getAttribute('aria-label')
+            ];
+            return (candidates.find(value => value && value.trim()) || '')
+              .replace(/\u00a0/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+          })
         )
         """
     )
-    if not isinstance(rows, list):
-        raise RuntimeError("браузер вернул неожиданный формат таблицы")
-    return parse_profinance_rows(rows, source_name)
+    return rows if isinstance(rows, list) else []
+
+
+def fetch_profinance_browser(page: Page, url: str, source_name: str) -> tuple[list[str], list[float | int]]:
+    page.goto(url, wait_until="domcontentloaded", timeout=90_000)
+    try:
+        page.wait_for_load_state("networkidle", timeout=25_000)
+    except Exception:  # noqa: BLE001 - analytics may keep connections open
+        pass
+
+    page.wait_for_selector("table#table_history", state="attached", timeout=60_000)
+    try:
+        page.locator("table#table_history").scroll_into_view_if_needed(timeout=10_000)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # The table shell can appear before AJAX fills its cells. Poll until the
+    # table contains recognisable values instead of reading the empty shell.
+    last_rows: list[list[str]] = []
+    last_error: Exception | None = None
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        last_rows = _browser_table_rows(page)
+        try:
+            return parse_profinance_rows(last_rows, source_name)
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+        page.wait_for_timeout(2000)
+
+    title = page.title()
+    sample = json.dumps(last_rows[:5], ensure_ascii=False)[:1800]
+    raise RuntimeError(
+        f"таблица не заполнилась за 90 с; title={title!r}; url={page.url!r}; "
+        f"rows={len(last_rows)}; sample={sample}; last={last_error}"
+    )
 
 
 def fetch_all_profinance() -> tuple[
@@ -347,7 +517,6 @@ def fetch_all_profinance() -> tuple[
     results: dict[str, tuple[list[str], list[float | int]]] = {}
     errors: dict[str, str] = {}
 
-    # Try the inexpensive requests parser first.
     browser_needed: list[tuple[str, str]] = []
     for key, url in PROFINANCE.items():
         try:
@@ -366,16 +535,31 @@ def fetch_all_profinance() -> tuple[
     with sync_playwright() as playwright:
         browser: Browser = playwright.chromium.launch(
             headless=True,
-            args=["--disable-dev-shm-usage", "--no-sandbox"],
+            args=[
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+            ],
         )
         context = browser.new_context(
             user_agent=USER_AGENT,
             locale="ru-RU",
             timezone_id="Europe/Moscow",
             viewport={"width": 1440, "height": 1200},
+            java_script_enabled=True,
+        )
+        context.set_extra_http_headers(
+            {
+                "Accept-Language": "ru-RU,ru;q=0.9,en;q=0.8",
+                "Referer": "https://www.profinance.ru/",
+            }
         )
         page = context.new_page()
         page.set_default_timeout(60_000)
+        # Reduce the most obvious automation marker used by some page scripts.
+        page.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+        )
         for key, url in browser_needed:
             try:
                 results[key] = fetch_profinance_browser(page, url, f"ProFinance {key}")
@@ -628,6 +812,29 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
     return updated, summary
 
 
+
+def load_current() -> dict[str, Any]:
+    """Return the last successfully saved dashboard payload."""
+    return load_base_payload()
+
+
+def refresh_file(min_success: int = 4) -> dict[str, Any]:
+    """Refresh web sources and atomically save current.json.
+
+    The existing file is preserved when too few sources can be read. This
+    function is used by the local HTTP server as well as by command-line runs.
+    """
+    payload, summary = refresh_payload(load_base_payload())
+    if int(summary.get("successes", 0)) < min_success:
+        failed = summary.get("failed_sources", {})
+        details = "; ".join(f"{key}: {value}" for key, value in list(failed.items())[:4])
+        raise RuntimeError(
+            f"Обновлено только {summary.get('successes', 0)} из {summary.get('total', 0)} "
+            f"источников; требуется минимум {min_success}. {details}"
+        )
+    save_payload(payload)
+    return payload
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Refresh Operboard web data")
     parser.add_argument(
@@ -640,19 +847,18 @@ def main() -> int:
 
     try:
         payload, summary = refresh_payload(load_base_payload())
+        log(json.dumps(summary, ensure_ascii=False, indent=2))
+        if summary["successes"] < args.min_success:
+            log(
+                f"[fatal] Successfully read only {summary['successes']} of {summary['total']} sources; "
+                f"required at least {args.min_success}. data/current.json was NOT overwritten."
+            )
+            return 3
+        save_payload(payload)
     except Exception as exc:  # noqa: BLE001
         log(f"[fatal] {exc}")
         return 2
 
-    log(json.dumps(summary, ensure_ascii=False, indent=2))
-    if summary["successes"] < args.min_success:
-        log(
-            f"[fatal] Successfully read only {summary['successes']} of {summary['total']} sources; "
-            f"required at least {args.min_success}. data/current.json was NOT overwritten."
-        )
-        return 3
-
-    save_payload(payload)
     log(f"[done] Saved {DATA_PATH}")
     return 0
 

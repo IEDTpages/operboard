@@ -1,44 +1,86 @@
-# Размещение Оперборда на GitHub Pages
+# Установка обновлённой версии в существующий репозиторий GitHub
 
-Проект подготовлен для статической публикации через GitHub Pages и автоматического обновления данных через GitHub Actions.
+## 1. Замените файлы
 
-## Что изменено
+Загрузите содержимое этого комплекта в корень репозитория с заменой существующих файлов. Особенно важно заменить:
 
-- `index.html` загружает актуальные данные из относительного адреса `./data/current.json`.
-- `.github/workflows/pages.yml` раз в час запускает `refresh_data.py`, сохраняет обновлённый JSON и публикует сайт.
-- Кнопка «Обновить» перечитывает последнюю опубликованную версию `data/current.json`.
-- `server.py` и локальные BAT/SH-файлы сохранены для локального запуска, но GitHub Pages их не выполняет.
+```text
+.github/workflows/pages.yml
+refresh_data.py
+requirements.txt
+index.html
+```
 
-## Первичная настройка
+Папки `data` и `.github` должны сохраниться именно с такими именами.
 
-1. Создайте на GitHub новый репозиторий, например `operboard-dashboard`.
-2. Загрузите в корень репозитория всё содержимое этой папки. В корне должны находиться `index.html`, `refresh_data.py`, `requirements.txt`, папки `data` и `.github`.
-3. Убедитесь, что главная ветка называется `main`.
-4. Откройте `Settings → Pages`.
-5. В разделе `Build and deployment` выберите `Source: GitHub Actions`.
-6. Откройте вкладку `Actions`, выберите workflow `Refresh data and deploy dashboard` и нажмите `Run workflow`.
-7. После успешного выполнения ссылка появится в `Settings → Pages` и в разделе `Deployments`.
+## 2. Проверьте разрешения Actions
 
-Адрес проектного сайта обычно имеет вид:
+Откройте:
 
-`https://ВАШ_ЛОГИН.github.io/operboard-dashboard/`
+```text
+Settings → Actions → General → Workflow permissions
+```
 
-## Обновление данных
+Выберите `Read and write permissions` и сохраните настройку.
 
-Workflow запускается каждый час на 17-й минуте. Для изменения периода отредактируйте строку:
+## 3. Проверьте источник GitHub Pages
+
+Откройте:
+
+```text
+Settings → Pages → Build and deployment
+```
+
+Установите `Source: GitHub Actions`.
+
+## 4. Запустите обновление вручную
+
+Откройте:
+
+```text
+Actions → Refresh data and deploy dashboard → Run workflow
+```
+
+В успешном запуске должны пройти шаги:
+
+```text
+Install Chromium and operating-system dependencies
+Verify Chromium launch
+Refresh dashboard data
+Validate generated JSON
+Save refreshed data in repository
+Deploy to GitHub Pages
+```
+
+В логе `Validate generated JSON` отдельно выводятся статусы `brent`, `urals`, `ttf`, `ara` и `lme`.
+
+## 5. Проверьте опубликованные данные
+
+Откройте в репозитории `data/current.json`. После успешного запуска должны присутствовать:
+
+```json
+"source_mode": "web_refresh"
+```
+
+и объект:
+
+```json
+"refresh_summary": {
+  "successes": 11,
+  "total": 11
+}
+```
+
+Число успешных источников может быть меньше 11 при временной недоступности отдельных сайтов. Необновившиеся ряды сохраняют последние корректные значения, а причина записывается в `status`.
+
+## Особенность кнопки «Обновить»
+
+GitHub Pages не запускает Python по нажатию кнопки. Кнопка в дашборде перечитывает уже опубликованный `data/current.json`. Для немедленного сбора данных запустите workflow вручную во вкладке Actions.
+
+## Расписание
+
+По умолчанию workflow запускается каждый час на 17-й минуте UTC:
 
 ```yaml
 - cron: "17 * * * *"
 ```
-
-Примеры:
-
-- раз в 3 часа: `17 */3 * * *`
-- дважды в день: `17 6,18 * * *`
-- каждый день в 06:17 UTC: `17 6 * * *`
-
-Для ручного обновления откройте `Actions → Refresh data and deploy dashboard → Run workflow`.
-
-## Важное ограничение
-
-Кнопка «Обновить» в самом дашборде не запускает Python на GitHub: она только загружает последний JSON, уже опубликованный GitHub Actions. Запустить внеплановое получение данных можно через кнопку `Run workflow` во вкладке Actions.
