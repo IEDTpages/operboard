@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "data/current.json"
   workflow_dispatch:
   schedule:
-    # Every hour at minute 17. GitHub Actions schedules use UTC.
+    # GitHub Actions cron uses UTC. Run hourly at minute 17.
     - cron: "17 * * * *"
 
 permissions:
@@ -14,15 +16,19 @@ permissions:
   pages: write
   id-token: write
 
-# Prevent two refresh/deploy runs from changing the main branch simultaneously.
 concurrency:
   group: "operboard-pages-${{ github.ref }}"
   cancel-in-progress: true
 
+env:
+  # The same explicit directory is used during browser installation and runtime.
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
+  PYTHONUNBUFFERED: "1"
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
@@ -37,16 +43,78 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m playwright --version
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: playwright-${{ runner.os }}-py312-${{ hashFiles('requirements.txt') }}
+
+      - name: Install Chromium and operating-system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m playwright install-deps chromium
+          python -m playwright install chromium
+          test -d "$PLAYWRIGHT_BROWSERS_PATH"
+          du -sh "$PLAYWRIGHT_BROWSERS_PATH"
+
+      - name: Verify Chromium launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(
+                  headless=True,
+                  args=["--disable-dev-shm-usage", "--no-sandbox"],
+              )
+              page = browser.new_page()
+              page.set_content("<title>Operboard browser check</title>")
+              assert page.title() == "Operboard browser check"
+              browser.close()
+          print("Chromium launch check: OK")
+          PY
 
       - name: Refresh dashboard data
-        run: python refresh_data.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          python refresh_data.py --min-success 4
 
       - name: Validate generated JSON
-        run: python -m json.tool data/current.json > /dev/null
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool data/current.json > /dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("data/current.json").read_text(encoding="utf-8"))
+          summary = payload.get("refresh_summary") or {}
+          statuses = payload.get("status") or {}
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          print("ProFinance status:")
+          for key in ("brent", "urals", "ttf", "ara", "lme"):
+              item = statuses.get(key) or {}
+              print(f"  {key}: {item.get('state')} — {item.get('message', '')}")
+          assert payload.get("source_mode") == "web_refresh", "No web data was loaded"
+          assert int(summary.get("successes", 0)) >= 4, "Too few sources were refreshed"
+          PY
+
+      - name: Preserve refreshed JSON
+        shell: bash
+        run: cp data/current.json /tmp/operboard-current.json
 
       - name: Save refreshed data in repository
         shell: bash
@@ -56,47 +124,46 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Preserve the JSON created by this workflow before synchronizing
-          # the working tree with the latest state of the remote main branch.
-          cp data/current.json /tmp/current.json
-
-          # Retry if main changes while this workflow is preparing its commit.
+          pushed=0
           for attempt in 1 2 3; do
             echo "Push attempt ${attempt} of 3"
-
             git fetch origin main
             git reset --hard origin/main
-
-            cp /tmp/current.json data/current.json
+            cp /tmp/operboard-current.json data/current.json
             git add data/current.json
 
             if git diff --cached --quiet; then
-              echo "Dashboard data has not changed. Nothing to commit."
-              exit 0
+              echo "Dashboard JSON has not changed."
+              pushed=1
+              break
             fi
 
             git commit -m "chore: refresh dashboard data [skip ci]"
-
             if git push origin HEAD:main; then
-              echo "Dashboard data successfully pushed to main."
-              exit 0
+              echo "Dashboard data successfully pushed."
+              pushed=1
+              break
             fi
 
-            echo "The remote main branch changed during push. Retrying..."
+            echo "Remote main changed during push. Retrying..."
             sleep $((attempt * 3))
           done
 
-          echo "Unable to push refreshed data after 3 attempts."
-          exit 1
+          if [ "$pushed" -ne 1 ]; then
+            echo "Unable to push refreshed data after three attempts."
+            exit 1
+          fi
 
-      - name: Prepare static site
+          # Synchronisation resets the working tree. Restore the exact JSON
+          # generated by this run for the Pages deployment artifact.
+          cp /tmp/operboard-current.json data/current.json
+
+      - name: Prepare static Pages site
         shell: bash
         run: |
           set -euo pipefail
-
           rm -rf _site
           mkdir -p _site/data
-
           cp index.html _site/index.html
           cp data/current.json _site/data/current.json
           cp data/snapshot.json _site/data/snapshot.json
