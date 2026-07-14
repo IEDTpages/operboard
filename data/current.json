@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-14T20:42:22+00:00",
+  "generated_at": "2026-07-14T20:47:46+00:00",
   "data_as_of": "2026-07-15",
   "source_mode": "web_refresh",
   "report": {
@@ -27349,7 +27349,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:40:30+00:00",
+      "updated_at": "2026-07-14T20:45:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-14",
       "merged_latest": "2026-07-14",
@@ -27358,7 +27358,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:40:31+00:00",
+      "updated_at": "2026-07-14T20:45:53+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-06",
       "merged_latest": "2026-07-06",
@@ -27367,7 +27367,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:40:30+00:00",
+      "updated_at": "2026-07-14T20:45:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-15",
       "merged_latest": "2026-07-15",
@@ -27376,32 +27376,32 @@
     },
     "brent": {
       "state": "error",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Browser parser: ProFinance brent: источник вернул пустой ряд"
     },
     "urals": {
       "state": "error",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Browser parser: ProFinance urals: источник вернул пустой ряд"
     },
     "ttf": {
       "state": "error",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Browser parser: ProFinance ttf: источник вернул пустой ряд"
     },
     "ara": {
       "state": "error",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Browser parser: ProFinance ara: источник вернул пустой ряд"
     },
     "lme": {
       "state": "error",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Browser parser: ProFinance lme: источник вернул пустой ряд"
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:40:34+00:00",
+      "updated_at": "2026-07-14T20:45:57+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -27410,7 +27410,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:40:36+00:00",
+      "updated_at": "2026-07-14T20:45:59+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -27419,7 +27419,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-14T20:42:22+00:00",
+      "updated_at": "2026-07-14T20:47:46+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -27432,7 +27432,7 @@
     "failures": 5,
     "total": 11,
     "actual_changed_points": 0,
-    "updated_at": "2026-07-14T20:42:22+00:00",
+    "updated_at": "2026-07-14T20:47:46+00:00",
     "failed_sources": {
       "brent": "Browser parser: ProFinance brent: источник вернул пустой ряд",
       "urals": "Browser parser: ProFinance urals: источник вернул пустой ряд",
