@@ -2,8 +2,9 @@ name: Refresh data and deploy dashboard
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - "data/current.json"
   workflow_dispatch:
   schedule:
     # Every hour at minute 17. GitHub Actions schedules use UTC.
@@ -14,7 +15,6 @@ permissions:
   pages: write
   id-token: write
 
-# Prevent two refresh/deploy runs from changing the main branch simultaneously.
 concurrency:
   group: "operboard-pages-${{ github.ref }}"
   cancel-in-progress: true
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Check out repository
@@ -37,16 +37,35 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Refresh dashboard data
-        run: python refresh_data.py
+      - name: Install Chromium for rendered web sources
+        run: python -m playwright install --with-deps chromium
 
-      - name: Validate generated JSON
-        run: python -m json.tool data/current.json > /dev/null
+      - name: Refresh dashboard data
+        # There are 11 sources. Refuse to publish a silent PBIX fallback when
+        # fewer than four web sources can actually be read.
+        run: python refresh_data.py --min-success 4
+
+      - name: Validate generated JSON and print refresh summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m json.tool data/current.json > /dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("data/current.json").read_text(encoding="utf-8"))
+          print(json.dumps(payload.get("refresh_summary", {}), ensure_ascii=False, indent=2))
+          assert payload.get("source_mode") == "web_refresh", "No web data was loaded"
+          PY
+
+      - name: Preserve refreshed JSON
+        run: cp data/current.json /tmp/operboard-current.json
 
       - name: Save refreshed data in repository
         shell: bash
@@ -56,47 +75,41 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Preserve the JSON created by this workflow before synchronizing
-          # the working tree with the latest state of the remote main branch.
-          cp data/current.json /tmp/current.json
-
-          # Retry if main changes while this workflow is preparing its commit.
           for attempt in 1 2 3; do
             echo "Push attempt ${attempt} of 3"
-
             git fetch origin main
             git reset --hard origin/main
-
-            cp /tmp/current.json data/current.json
+            cp /tmp/operboard-current.json data/current.json
             git add data/current.json
 
             if git diff --cached --quiet; then
-              echo "Dashboard data has not changed. Nothing to commit."
-              exit 0
+              echo "Dashboard data has not changed."
+              break
             fi
 
             git commit -m "chore: refresh dashboard data [skip ci]"
-
             if git push origin HEAD:main; then
-              echo "Dashboard data successfully pushed to main."
-              exit 0
+              echo "Dashboard data successfully pushed."
+              break
             fi
 
-            echo "The remote main branch changed during push. Retrying..."
+            if [ "$attempt" -eq 3 ]; then
+              echo "Unable to push refreshed data after three attempts."
+              exit 1
+            fi
             sleep $((attempt * 3))
           done
 
-          echo "Unable to push refreshed data after 3 attempts."
-          exit 1
+          # The working tree was reset during synchronization. Restore the
+          # exact JSON generated in this run for the Pages artifact.
+          cp /tmp/operboard-current.json data/current.json
 
       - name: Prepare static site
         shell: bash
         run: |
           set -euo pipefail
-
           rm -rf _site
           mkdir -p _site/data
-
           cp index.html _site/index.html
           cp data/current.json _site/data/current.json
           cp data/snapshot.json _site/data/snapshot.json
