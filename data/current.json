@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-14T19:59:36.893642+00:00",
+  "generated_at": "2026-07-14T20:07:37.664414+00:00",
   "data_as_of": "2026-07-15",
   "source_mode": "web_refresh",
   "report": {
@@ -27349,63 +27349,63 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:55:42.983938+00:00",
+      "updated_at": "2026-07-14T20:03:42.469349+00:00",
       "message": "Обновлено с веб-источника"
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:55:44.501482+00:00",
+      "updated_at": "2026-07-14T20:03:44.220380+00:00",
       "message": "Обновлено с веб-источника"
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:55:43.246228+00:00",
+      "updated_at": "2026-07-14T20:03:42.787792+00:00",
       "message": "Обновлено с веб-источника"
     },
     "brent": {
       "state": "error",
-      "updated_at": "2026-07-14T19:56:35.914388+00:00",
-      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/brent/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f1ee6af8e00>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
+      "updated_at": "2026-07-14T20:04:36.178799+00:00",
+      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/brent/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f4107b9fef0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
     },
     "urals": {
       "state": "error",
-      "updated_at": "2026-07-14T19:57:21.178856+00:00",
-      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/urals_med/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f1ee6af88c0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
+      "updated_at": "2026-07-14T20:05:21.648736+00:00",
+      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/urals_med/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f4107b9fbc0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
     },
     "ttf": {
       "state": "error",
-      "updated_at": "2026-07-14T19:58:06.423949+00:00",
-      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/ttfusd1000/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f1ee6af83e0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
+      "updated_at": "2026-07-14T20:06:07.085753+00:00",
+      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/ttfusd1000/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f4107b9f0b0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
     },
     "ara": {
       "state": "error",
-      "updated_at": "2026-07-14T19:58:51.653574+00:00",
-      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/coaleu/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f1ee6afa5d0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
+      "updated_at": "2026-07-14T20:06:52.306803+00:00",
+      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/coaleu/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f4107b9f7a0>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
     },
     "lme": {
       "state": "error",
-      "updated_at": "2026-07-14T19:59:36.696690+00:00",
-      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/aluminum/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f1ee6af9c40>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
+      "updated_at": "2026-07-14T20:07:37.355566+00:00",
+      "message": "HTTPSConnectionPool(host='www.profinance.ru', port=443): Max retries exceeded with url: /charts/aluminum/lc91h (Caused by ConnectTimeoutError(<HTTPSConnection(host='www.profinance.ru', port=443) at 0x7f4107b9e330>, 'Connection to www.profinance.ru timed out. (connect timeout=45)'))"
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:55:48.376809+00:00",
+      "updated_at": "2026-07-14T20:03:48.348723+00:00",
       "message": "Обновлено с веб-источника"
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:55:50.650660+00:00",
+      "updated_at": "2026-07-14T20:03:50.795294+00:00",
       "message": "Обновлено с веб-источника"
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-14T19:59:36.893631+00:00",
+      "updated_at": "2026-07-14T20:07:37.664400+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch"
     }
   },
   "refresh_summary": {
     "successes": 6,
     "total": 11,
-    "updated_at": "2026-07-14T19:59:36.893653+00:00"
+    "updated_at": "2026-07-14T20:07:37.664427+00:00"
   }
 }
