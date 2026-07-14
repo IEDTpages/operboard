@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-14T22:08:00+00:00",
+  "generated_at": "2026-07-14T23:30:03+00:00",
   "data_as_of": "2026-07-15",
   "source_mode": "web_refresh",
   "report": {
@@ -8755,7 +8755,7 @@
         75.24,
         78.48,
         83.31,
-        85.11
+        85.14
       ]
     },
     "urals": {
@@ -12189,7 +12189,7 @@
         54.11,
         57.34,
         58.44,
-        61.33,
+        61.35,
         62.2
       ]
     },
@@ -26419,7 +26419,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-14T21:51:31+00:00",
+      "updated_at": "2026-07-14T23:27:43+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-14",
       "merged_latest": "2026-07-14",
@@ -26428,7 +26428,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-14T21:51:33+00:00",
+      "updated_at": "2026-07-14T23:27:45+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-06",
       "merged_latest": "2026-07-06",
@@ -26437,7 +26437,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-14T21:51:32+00:00",
+      "updated_at": "2026-07-14T23:27:43+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-15",
       "merged_latest": "2026-07-15",
@@ -26445,33 +26445,53 @@
       "changed_points": 0
     },
     "brent": {
-      "state": "error",
-      "updated_at": "2026-07-14T22:08:00+00:00",
-      "message": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/brent/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-07-14T23:30:03+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-07-14",
+      "merged_latest": "2026-07-14",
+      "new_points": 0,
+      "changed_points": 1
     },
     "urals": {
-      "state": "error",
-      "updated_at": "2026-07-14T22:08:00+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/urals_med/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/urals_med/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-07-14T23:30:03+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-07-14",
+      "merged_latest": "2026-07-15",
+      "new_points": 0,
+      "changed_points": 1
     },
     "ttf": {
-      "state": "error",
-      "updated_at": "2026-07-14T22:08:00+00:00",
-      "message": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/ttfusd1000/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-07-14T23:30:03+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-07-14",
+      "merged_latest": "2026-07-14",
+      "new_points": 0,
+      "changed_points": 0
     },
     "ara": {
-      "state": "error",
-      "updated_at": "2026-07-14T22:08:00+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/coaleu/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/coaleu/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-07-14T23:30:03+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-07-14",
+      "merged_latest": "2026-07-14",
+      "new_points": 0,
+      "changed_points": 0
     },
     "lme": {
-      "state": "error",
-      "updated_at": "2026-07-14T22:08:00+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/aluminum/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/aluminum/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-07-14T23:30:03+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-07-14",
+      "merged_latest": "2026-07-14",
+      "new_points": 0,
+      "changed_points": 0
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-14T21:51:36+00:00",
+      "updated_at": "2026-07-14T23:27:49+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-14",
       "merged_latest": "2026-07-14",
@@ -26480,7 +26500,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-14T21:51:38+00:00",
+      "updated_at": "2026-07-14T23:27:51+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-14",
       "merged_latest": "2026-07-14",
@@ -26489,7 +26509,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-14T22:08:00+00:00",
+      "updated_at": "2026-07-14T23:30:03+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -26498,17 +26518,11 @@
     }
   },
   "refresh_summary": {
-    "successes": 6,
-    "failures": 5,
+    "successes": 11,
+    "failures": 0,
     "total": 11,
-    "actual_changed_points": 0,
-    "updated_at": "2026-07-14T22:08:00+00:00",
-    "failed_sources": {
-      "brent": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/brent/lc91h\", waiting until \"domcontentloaded\"\n",
-      "urals": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/urals_med/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/urals_med/lc91h\", waiting until \"domcontentloaded\"\n",
-      "ttf": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/ttfusd1000/lc91h\", waiting until \"domcontentloaded\"\n",
-      "ara": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/coaleu/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/coaleu/lc91h\", waiting until \"domcontentloaded\"\n",
-      "lme": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/aluminum/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/aluminum/lc91h\", waiting until \"domcontentloaded\"\n"
-    }
+    "actual_changed_points": 2,
+    "updated_at": "2026-07-14T23:30:03+00:00",
+    "failed_sources": {}
   }
 }
