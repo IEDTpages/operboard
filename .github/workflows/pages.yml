@@ -1,0 +1,124 @@
+name: Refresh data and deploy dashboard
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    # Every hour at minute 17. GitHub Actions schedules use UTC.
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Prevent two refresh/deploy runs from changing the main branch simultaneously.
+concurrency:
+  group: "operboard-pages-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Refresh dashboard data
+        run: python refresh_data.py
+
+      - name: Validate generated JSON
+        run: python -m json.tool data/current.json > /dev/null
+
+      - name: Save refreshed data in repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Preserve the JSON created by this workflow before synchronizing
+          # the working tree with the latest state of the remote main branch.
+          cp data/current.json /tmp/current.json
+
+          # Retry if main changes while this workflow is preparing its commit.
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt} of 3"
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            cp /tmp/current.json data/current.json
+            git add data/current.json
+
+            if git diff --cached --quiet; then
+              echo "Dashboard data has not changed. Nothing to commit."
+              exit 0
+            fi
+
+            git commit -m "chore: refresh dashboard data [skip ci]"
+
+            if git push origin HEAD:main; then
+              echo "Dashboard data successfully pushed to main."
+              exit 0
+            fi
+
+            echo "The remote main branch changed during push. Retrying..."
+            sleep $((attempt * 3))
+          done
+
+          echo "Unable to push refreshed data after 3 attempts."
+          exit 1
+
+      - name: Prepare static site
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf _site
+          mkdir -p _site/data
+
+          cp index.html _site/index.html
+          cp data/current.json _site/data/current.json
+          cp data/snapshot.json _site/data/snapshot.json
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "_site"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
