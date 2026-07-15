@@ -1,86 +1,55 @@
-# Установка обновлённой версии в существующий репозиторий GitHub
+# Обновление Оперборда на GitHub Pages — версия v5
 
-## 1. Замените файлы
+## Какие файлы заменить
 
-Загрузите содержимое этого комплекта в корень репозитория с заменой существующих файлов. Особенно важно заменить:
+Рекомендуется загрузить в корень репозитория всё содержимое архива с заменой существующих файлов.
 
-```text
-.github/workflows/pages.yml
-refresh_data.py
-requirements.txt
-index.html
-```
+Минимально необходимо заменить:
 
-Папки `data` и `.github` должны сохраниться именно с такими именами.
+- `index.html`;
+- `refresh_data.py`;
+- `data/current.json`;
+- `data/snapshot.json`;
+- `.github/workflows/pages.yml`.
 
-## 2. Проверьте разрешения Actions
+`requirements.txt` также следует заменить файлом из комплекта, чтобы версия Playwright оставалась согласованной с Chromium.
 
-Откройте:
+## После загрузки
 
-```text
-Settings → Actions → General → Workflow permissions
-```
+1. Сделайте commit в ветку `main`.
+2. Откройте `Settings → Actions → General`.
+3. Проверьте `Workflow permissions → Read and write permissions`.
+4. Откройте `Settings → Pages` и проверьте `Source → GitHub Actions`.
+5. Запустите `Actions → Refresh data and deploy dashboard → Run workflow`.
 
-Выберите `Read and write permissions` и сохраните настройку.
+Первый запуск обязателен: исходный резервный JSON содержит структуру новых EUR и CNY рядов, а их исторические значения будут загружены с сайта ЦБ РФ во время workflow.
 
-## 3. Проверьте источник GitHub Pages
+## Проверка валютных данных
 
-Откройте:
-
-```text
-Settings → Pages → Build and deployment
-```
-
-Установите `Source: GitHub Actions`.
-
-## 4. Запустите обновление вручную
-
-Откройте:
+На шаге `Refresh data` должны появиться строки:
 
 ```text
-Actions → Refresh data and deploy dashboard → Run workflow
+[refresh] rubusd: OK; ...
+[refresh] rubeur: OK; ...
+[refresh] rubcny: OK; ...
 ```
 
-В успешном запуске должны пройти шаги:
+На шаге `Validate generated JSON` появятся последние даты и значения трёх рядов:
 
 ```text
-Install Chromium and operating-system dependencies
-Verify Chromium launch
-Refresh dashboard data
-Validate generated JSON
-Save refreshed data in repository
-Deploy to GitHub Pages
+rubcny: 2026-... = ...
+rubeur: 2026-... = ...
+rubusd: 2026-... = ...
 ```
 
-В логе `Validate generated JSON` отдельно выводятся статусы `brent`, `urals`, `ttf`, `ara` и `lme`.
+После публикации на главной странице должны отображаться три отдельные карточки, а в навигации — раздел `Курсы валют`.
 
-## 5. Проверьте опубликованные данные
+## Автоматическое обновление
 
-Откройте в репозитории `data/current.json`. После успешного запуска должны присутствовать:
-
-```json
-"source_mode": "web_refresh"
-```
-
-и объект:
-
-```json
-"refresh_summary": {
-  "successes": 11,
-  "total": 11
-}
-```
-
-Число успешных источников может быть меньше 11 при временной недоступности отдельных сайтов. Необновившиеся ряды сохраняют последние корректные значения, а причина записывается в `status`.
-
-## Особенность кнопки «Обновить»
-
-GitHub Pages не запускает Python по нажатию кнопки. Кнопка в дашборде перечитывает уже опубликованный `data/current.json`. Для немедленного сбора данных запустите workflow вручную во вкладке Actions.
-
-## Расписание
-
-По умолчанию workflow запускается каждый час на 17-й минуте UTC:
+Workflow выполняет проверку трижды в час:
 
 ```yaml
-- cron: "17 * * * *"
+- cron: "13,33,53 * * * *"
 ```
+
+Полный сбор запускается только при возрасте данных 50 минут и более. Это уменьшает последствия задержек scheduled workflows GitHub Actions и не запускает тяжёлую установку Chromium каждые 20 минут.

@@ -251,23 +251,49 @@ def fetch_key_rate() -> tuple[list[str], list[float | int]]:
     return dates, values
 
 
-def fetch_rubusd() -> tuple[list[str], list[float | int]]:
+def fetch_cbr_currency(
+    currency_code: str,
+    series_name: str,
+) -> tuple[list[str], list[float | int]]:
+    """Load an official CBR exchange-rate series and normalize it per 1 unit.
+
+    CBR may publish some currencies with a nominal greater than one. Dividing
+    Value by Nominal keeps USD, EUR and CNY directly comparable as rubles per
+    one unit of the foreign currency.
+    """
     start = START_DATE.strftime("%d/%m/%Y")
     end = (date.today() + timedelta(days=31)).strftime("%d/%m/%Y")
     response = get(
         "https://www.cbr.ru/scripts/XML_dynamic.asp",
-        params={"date_req1": start, "date_req2": end, "VAL_NM_RQ": "R01235"},
+        params={
+            "date_req1": start,
+            "date_req2": end,
+            "VAL_NM_RQ": currency_code,
+        },
     )
     root = ET.fromstring(response.content)
     rows: list[tuple[date, float]] = []
     for record in root.findall(".//Record"):
         row_date = parse_date(record.attrib.get("Date"))
         value = to_number(record.findtext("Value"))
-        if row_date and value is not None:
-            rows.append((row_date, value))
+        nominal = to_number(record.findtext("Nominal")) or 1.0
+        if row_date and value is not None and nominal > 0:
+            rows.append((row_date, value / nominal))
     dates, values = pack_series(rows)
-    validate_numeric_series(dates, values, "ЦБ РФ — USD/RUB")
+    validate_numeric_series(dates, values, f"ЦБ РФ — {series_name}")
     return dates, values
+
+
+def fetch_rubusd() -> tuple[list[str], list[float | int]]:
+    return fetch_cbr_currency("R01235", "USD/RUB")
+
+
+def fetch_rubeur() -> tuple[list[str], list[float | int]]:
+    return fetch_cbr_currency("R01239", "EUR/RUB")
+
+
+def fetch_rubcny() -> tuple[list[str], list[float | int]]:
+    return fetch_cbr_currency("R01375", "CNY/RUB")
 
 
 def fetch_moex(secid: str) -> tuple[list[str], list[float | int]]:
@@ -700,6 +726,8 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
     request_jobs: dict[str, Callable[[], tuple[list[str], list[float | int]]]] = {
         "key_rate": fetch_key_rate,
         "rubusd": fetch_rubusd,
+        "rubeur": fetch_rubeur,
+        "rubcny": fetch_rubcny,
         "cpi": fetch_bizon,
         "wheat": lambda: fetch_moex("WHFOB"),
         "oil": lambda: fetch_moex("SOEXP"),
@@ -813,6 +841,19 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
 
 
 
+def validate_required_currency_series(payload: dict[str, Any]) -> None:
+    """Ensure the three CBR currency series exist before publishing."""
+    for key in ("rubusd", "rubeur", "rubcny"):
+        series = payload.get("series", {}).get(key, {})
+        dates = series.get("dates") or []
+        values = series.get("values") or []
+        if not dates or len(dates) != len(values):
+            raise RuntimeError(
+                f"Валютный ряд {key} не загружен или повреждён: "
+                f"{len(dates)} дат / {len(values)} значений"
+            )
+
+
 def load_current() -> dict[str, Any]:
     """Return the last successfully saved dashboard payload."""
     return load_base_payload()
@@ -832,6 +873,7 @@ def refresh_file(min_success: int = 4) -> dict[str, Any]:
             f"Обновлено только {summary.get('successes', 0)} из {summary.get('total', 0)} "
             f"источников; требуется минимум {min_success}. {details}"
         )
+    validate_required_currency_series(payload)
     save_payload(payload)
     return payload
 
@@ -854,6 +896,7 @@ def main() -> int:
                 f"required at least {args.min_success}. data/current.json was NOT overwritten."
             )
             return 3
+        validate_required_currency_series(payload)
         save_payload(payload)
     except Exception as exc:  # noqa: BLE001
         log(f"[fatal] {exc}")
