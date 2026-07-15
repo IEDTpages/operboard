@@ -8,8 +8,9 @@ on:
       - "data/current.json"
   workflow_dispatch:
   schedule:
-    # GitHub Actions cron uses UTC. Run hourly at minute 17.
-    - cron: "17 * * * *"
+    # Three checks per hour in UTC. A full refresh runs only when data is
+    # at least 50 minutes old, which compensates for delayed GitHub cron jobs.
+    - cron: "13,33,53 * * * *"
 
 permissions:
   contents: write
@@ -18,17 +19,14 @@ permissions:
 
 concurrency:
   group: "operboard-pages-${{ github.ref }}"
-  cancel-in-progress: true
-
-env:
-  # The same explicit directory is used during browser installation and runtime.
-  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
-  PYTHONUNBUFFERED: "1"
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    outputs:
+      refresh_due: ${{ steps.freshness.outputs.refresh_due }}
 
     steps:
       - name: Check out repository
@@ -37,128 +35,151 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Check whether refresh is due
+        id: freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
+            echo "refresh_due=true" >> "$GITHUB_OUTPUT"
+            echo "Manual or push run: refresh is required."
+            exit 0
+          fi
+
+          if [[ ! -f data/current.json ]]; then
+            echo "refresh_due=true" >> "$GITHUB_OUTPUT"
+            echo "current.json is missing: refresh is required."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          due = True
+          reason = "timestamp missing or invalid"
+          try:
+              payload = json.loads(Path("data/current.json").read_text(encoding="utf-8"))
+              stamp = payload.get("generated_at")
+              parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+              if parsed.tzinfo is None:
+                  parsed = parsed.replace(tzinfo=timezone.utc)
+              age_minutes = (datetime.now(timezone.utc) - parsed.astimezone(timezone.utc)).total_seconds() / 60
+              due = age_minutes >= 50
+              reason = f"data age is {age_minutes:.1f} minutes"
+          except Exception as exc:
+              reason = f"cannot read freshness: {exc}"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"refresh_due={'true' if due else 'false'}\n")
+          print(f"Refresh due: {due}; {reason}")
+          PY
+
       - name: Set up Python
+        if: steps.freshness.outputs.refresh_due == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
       - name: Install Python dependencies
-        shell: bash
+        if: steps.freshness.outputs.refresh_due == 'true'
         run: |
-          set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          python -m playwright --version
 
-      - name: Cache Playwright browser
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
-          key: playwright-${{ runner.os }}-py312-${{ hashFiles('requirements.txt') }}
-
-      - name: Install Chromium and operating-system dependencies
+      - name: Install Chromium, verify launch, and refresh data
+        if: steps.freshness.outputs.refresh_due == 'true'
         shell: bash
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
         run: |
           set -euo pipefail
-          python -m playwright install-deps chromium
-          python -m playwright install chromium
-          test -d "$PLAYWRIGHT_BROWSERS_PATH"
-          du -sh "$PLAYWRIGHT_BROWSERS_PATH"
 
-      - name: Verify Chromium launch
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Install the browser version that exactly matches the installed
+          # Playwright package. Browser caches are intentionally not reused.
+          python -m playwright install --with-deps chromium
+
           python - <<'PY'
+          from pathlib import Path
           from playwright.sync_api import sync_playwright
 
           with sync_playwright() as playwright:
-              browser = playwright.chromium.launch(
-                  headless=True,
-                  args=["--disable-dev-shm-usage", "--no-sandbox"],
-              )
+              executable = Path(playwright.chromium.executable_path)
+              print(f"Playwright expected executable: {executable}")
+              if not executable.exists():
+                  raise SystemExit(f"Chromium executable not found: {executable}")
+              browser = playwright.chromium.launch(headless=True)
               page = browser.new_page()
-              page.set_content("<title>Operboard browser check</title>")
-              assert page.title() == "Operboard browser check"
+              page.set_content("<title>Operboard check</title>")
+              assert page.title() == "Operboard check"
               browser.close()
           print("Chromium launch check: OK")
           PY
 
-      - name: Refresh dashboard data
-        shell: bash
-        run: |
-          set -euo pipefail
-          python refresh_data.py --min-success 4
+          python refresh_data.py
 
       - name: Validate generated JSON
-        shell: bash
+        if: steps.freshness.outputs.refresh_due == 'true'
         run: |
-          set -euo pipefail
           python -m json.tool data/current.json > /dev/null
           python - <<'PY'
           import json
           from pathlib import Path
 
           payload = json.loads(Path("data/current.json").read_text(encoding="utf-8"))
-          summary = payload.get("refresh_summary") or {}
-          statuses = payload.get("status") or {}
-          print(json.dumps(summary, ensure_ascii=False, indent=2))
-          print("ProFinance status:")
-          for key in ("brent", "urals", "ttf", "ara", "lme"):
-              item = statuses.get(key) or {}
-              print(f"  {key}: {item.get('state')} — {item.get('message', '')}")
-          assert payload.get("source_mode") == "web_refresh", "No web data was loaded"
-          assert int(summary.get("successes", 0)) >= 4, "Too few sources were refreshed"
+          required = {"rubusd", "rubeur", "rubcny"}
+          missing = required.difference(payload.get("series", {}))
+          if missing:
+              raise SystemExit(f"Missing currency series: {sorted(missing)}")
+          for key in sorted(required):
+              dates = payload["series"][key].get("dates", [])
+              values = payload["series"][key].get("values", [])
+              if not dates or len(dates) != len(values):
+                  raise SystemExit(f"Invalid currency series {key}: {len(dates)} dates / {len(values)} values")
+              print(f"{key}: {dates[-1]} = {values[-1]}")
           PY
 
-      - name: Preserve refreshed JSON
-        shell: bash
-        run: cp data/current.json /tmp/operboard-current.json
-
       - name: Save refreshed data in repository
+        if: steps.freshness.outputs.refresh_due == 'true'
         shell: bash
         run: |
           set -euo pipefail
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp data/current.json /tmp/current.json
 
-          pushed=0
           for attempt in 1 2 3; do
             echo "Push attempt ${attempt} of 3"
             git fetch origin main
             git reset --hard origin/main
-            cp /tmp/operboard-current.json data/current.json
+            cp /tmp/current.json data/current.json
             git add data/current.json
 
             if git diff --cached --quiet; then
-              echo "Dashboard JSON has not changed."
-              pushed=1
+              echo "Dashboard data has not changed. Nothing to commit."
               break
             fi
 
             git commit -m "chore: refresh dashboard data [skip ci]"
             if git push origin HEAD:main; then
-              echo "Dashboard data successfully pushed."
-              pushed=1
+              echo "Dashboard data successfully pushed to main."
               break
             fi
 
-            echo "Remote main changed during push. Retrying..."
+            if [[ "$attempt" == "3" ]]; then
+              echo "Unable to push refreshed data after 3 attempts."
+              exit 1
+            fi
             sleep $((attempt * 3))
           done
 
-          if [ "$pushed" -ne 1 ]; then
-            echo "Unable to push refreshed data after three attempts."
-            exit 1
-          fi
-
-          # Synchronisation resets the working tree. Restore the exact JSON
-          # generated by this run for the Pages deployment artifact.
-          cp /tmp/operboard-current.json data/current.json
-
-      - name: Prepare static Pages site
+      - name: Prepare static site
+        if: steps.freshness.outputs.refresh_due == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -170,14 +191,21 @@ jobs:
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
+        if: steps.freshness.outputs.refresh_due == 'true'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: steps.freshness.outputs.refresh_due == 'true'
         uses: actions/upload-pages-artifact@v4
         with:
           path: "_site"
 
+      - name: Skip fresh scheduled run
+        if: steps.freshness.outputs.refresh_due != 'true'
+        run: echo "No refresh needed; the latest successful dataset is less than 50 minutes old."
+
   deploy:
+    if: needs.build.result == 'success' && needs.build.outputs.refresh_due == 'true'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
