@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-16T20:42:48+00:00",
+  "generated_at": "2026-07-17T00:18:07+00:00",
   "data_as_of": "2026-07-17",
   "source_mode": "web_refresh",
   "report": {
@@ -12823,7 +12823,8 @@
         "2026-07-13",
         "2026-07-14",
         "2026-07-15",
-        "2026-07-16"
+        "2026-07-16",
+        "2026-07-17"
       ],
       "values": [
         83.69,
@@ -14267,7 +14268,8 @@
         83.31,
         85.14,
         85.08,
-        84.75
+        84.87,
+        84.84
       ]
     },
     "urals": {
@@ -15992,7 +15994,8 @@
         "2026-07-13",
         "2026-07-14",
         "2026-07-15",
-        "2026-07-16"
+        "2026-07-16",
+        "2026-07-17"
       ],
       "values": [
         45.84,
@@ -17704,7 +17707,8 @@
         58.44,
         61.35,
         65.65,
-        66.88
+        67.01,
+        66.96
       ]
     },
     "ttf": {
@@ -19161,7 +19165,8 @@
         "2026-07-13",
         "2026-07-14",
         "2026-07-15",
-        "2026-07-16"
+        "2026-07-16",
+        "2026-07-17"
       ],
       "values": [
         186.77,
@@ -20605,7 +20610,8 @@
         614.68,
         638.15,
         649.43,
-        651.24
+        651.99,
+        651.08
       ]
     },
     "ara": {
@@ -22263,7 +22269,8 @@
         "2026-07-13",
         "2026-07-14",
         "2026-07-15",
-        "2026-07-16"
+        "2026-07-16",
+        "2026-07-17"
       ],
       "values": [
         1901.51,
@@ -23707,7 +23714,8 @@
         3155.25,
         3168.5,
         3151.75,
-        3178.5
+        3178.5,
+        3176
       ]
     },
     "wheat": {
@@ -25034,7 +25042,8 @@
         "2026-07-10",
         "2026-07-13",
         "2026-07-14",
-        "2026-07-15"
+        "2026-07-15",
+        "2026-07-16"
       ],
       "values": [
         282.93,
@@ -26348,7 +26357,8 @@
         229.8,
         229.1,
         229,
-        229
+        229,
+        228.7
       ]
     },
     "oil": {
@@ -27464,7 +27474,8 @@
         "2026-07-10",
         "2026-07-13",
         "2026-07-14",
-        "2026-07-15"
+        "2026-07-15",
+        "2026-07-16"
       ],
       "values": [
         1352.17,
@@ -28567,7 +28578,8 @@
         1319.88,
         1319.88,
         1321.64,
-        1320.79
+        1320.79,
+        1321.2
       ]
     },
     "hormuz": {
@@ -31949,7 +31961,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:26+00:00",
+      "updated_at": "2026-07-17T00:15:50+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -31958,7 +31970,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:28+00:00",
+      "updated_at": "2026-07-17T00:15:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -31967,7 +31979,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:26+00:00",
+      "updated_at": "2026-07-17T00:15:50+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -31976,7 +31988,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:26+00:00",
+      "updated_at": "2026-07-17T00:15:50+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -31985,7 +31997,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:27+00:00",
+      "updated_at": "2026-07-17T00:15:51+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -31994,34 +32006,34 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
-      "fetched_latest": "2026-07-16",
-      "merged_latest": "2026-07-16",
-      "new_points": 0,
-      "changed_points": 1
+      "fetched_latest": "2026-07-17",
+      "merged_latest": "2026-07-17",
+      "new_points": 1,
+      "changed_points": 2
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
-      "fetched_latest": "2026-07-16",
-      "merged_latest": "2026-07-16",
-      "new_points": 0,
-      "changed_points": 1
+      "fetched_latest": "2026-07-17",
+      "merged_latest": "2026-07-17",
+      "new_points": 1,
+      "changed_points": 2
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
-      "fetched_latest": "2026-07-16",
-      "merged_latest": "2026-07-16",
-      "new_points": 0,
-      "changed_points": 1
+      "fetched_latest": "2026-07-17",
+      "merged_latest": "2026-07-17",
+      "new_points": 1,
+      "changed_points": 2
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -32030,34 +32042,34 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
-      "fetched_latest": "2026-07-16",
-      "merged_latest": "2026-07-16",
-      "new_points": 0,
+      "fetched_latest": "2026-07-17",
+      "merged_latest": "2026-07-17",
+      "new_points": 1,
       "changed_points": 1
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:33+00:00",
+      "updated_at": "2026-07-17T00:15:54+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-07-15",
-      "merged_latest": "2026-07-15",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-07-16",
+      "merged_latest": "2026-07-16",
+      "new_points": 1,
+      "changed_points": 1
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:40:36+00:00",
+      "updated_at": "2026-07-17T00:15:57+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-07-15",
-      "merged_latest": "2026-07-15",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-07-16",
+      "merged_latest": "2026-07-16",
+      "new_points": 1,
+      "changed_points": 1
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-16T20:42:48+00:00",
+      "updated_at": "2026-07-17T00:18:07+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -32069,8 +32081,8 @@
     "successes": 13,
     "failures": 0,
     "total": 13,
-    "actual_changed_points": 4,
-    "updated_at": "2026-07-16T20:42:48+00:00",
+    "actual_changed_points": 9,
+    "updated_at": "2026-07-17T00:18:07+00:00",
     "failed_sources": {}
   }
 }
