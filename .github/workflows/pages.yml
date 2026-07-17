@@ -146,6 +146,13 @@ jobs:
               if not dates or len(dates) != len(values):
                   raise SystemExit(f"Invalid required series {key}: {len(dates)} dates / {len(values)} values")
               print(f"{key}: {dates[-1]} = {values[-1]}")
+          production = payload["series"]["production_index"]
+          for mode in ("mom", "yoy", "ytd_yoy"):
+              block = production.get("modes", {}).get(mode, {})
+              dates = block.get("dates", [])
+              lines = block.get("series", {})
+              if not dates or any(len(lines.get(line, [])) != len(dates) for line in ("total", "mining", "manufacturing")):
+                  raise SystemExit(f"Invalid production mode: {mode}")
           PY
 
       - name: Save refreshed data in repository
@@ -157,13 +164,22 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           cp data/current.json /tmp/current.json
+          if [[ -f data/fedstat_filters.json ]]; then
+            cp data/fedstat_filters.json /tmp/fedstat_filters.json
+          fi
 
           for attempt in 1 2 3; do
             echo "Push attempt ${attempt} of 3"
             git fetch origin main
             git reset --hard origin/main
             cp /tmp/current.json data/current.json
+            if [[ -f /tmp/fedstat_filters.json ]]; then
+              cp /tmp/fedstat_filters.json data/fedstat_filters.json
+            fi
             git add data/current.json
+            if [[ -f data/fedstat_filters.json ]]; then
+              git add data/fedstat_filters.json
+            fi
 
             if git diff --cached --quiet; then
               echo "Dashboard data has not changed. Nothing to commit."
