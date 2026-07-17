@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "generated_at": "2026-07-17T13:47:13+00:00",
+  "generated_at": "2026-07-17T13:54:57+00:00",
   "data_as_of": "2026-07-17",
   "source_mode": "web_refresh",
   "report": {
@@ -14271,7 +14271,7 @@
         85.14,
         85.08,
         84.87,
-        86.74
+        86.85
       ]
     },
     "urals": {
@@ -17710,7 +17710,7 @@
         61.35,
         65.65,
         67.01,
-        69.36
+        69.5
       ]
     },
     "ttf": {
@@ -20613,7 +20613,7 @@
         638.15,
         649.43,
         651.99,
-        673.38
+        673.73
       ]
     },
     "ara": {
@@ -23719,7 +23719,7 @@
         3168.5,
         3151.75,
         3178.5,
-        3147.5
+        3150.75
       ]
     },
     "wheat": {
@@ -33382,7 +33382,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:32+00:00",
+      "updated_at": "2026-07-17T13:52:21+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33391,7 +33391,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:34+00:00",
+      "updated_at": "2026-07-17T13:52:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -33400,7 +33400,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:32+00:00",
+      "updated_at": "2026-07-17T13:52:22+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33409,7 +33409,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:33+00:00",
+      "updated_at": "2026-07-17T13:52:22+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33418,7 +33418,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:33+00:00",
+      "updated_at": "2026-07-17T13:52:22+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33427,7 +33427,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33436,7 +33436,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33445,7 +33445,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33454,7 +33454,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33463,7 +33463,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33472,7 +33472,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:57+00:00",
+      "updated_at": "2026-07-17T13:52:43+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -33481,7 +33481,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:45:00+00:00",
+      "updated_at": "2026-07-17T13:52:46+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -33490,7 +33490,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:47:13+00:00",
+      "updated_at": "2026-07-17T13:54:57+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -33499,48 +33499,48 @@
     },
     "production_index": {
       "state": "error",
-      "updated_at": "2026-07-17T13:44:43+00:00",
+      "updated_at": "2026-07-17T13:52:31+00:00",
       "message": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /enterprise_industrial (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:45:01+00:00",
+      "updated_at": "2026-07-17T13:52:47+00:00",
       "message": "Обновлено из квартальной книги платежного баланса ЦБ РФ",
       "fetched_latest": "2026-03-31",
       "merged_latest": "2026-03-31",
-      "new_points": 21,
-      "changed_points": 21
+      "new_points": 0,
+      "changed_points": 0
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:45:01+00:00",
+      "updated_at": "2026-07-17T13:52:47+00:00",
       "message": "Обновлено из квартальной книги платежного баланса ЦБ РФ",
       "fetched_latest": "2026-03-31",
       "merged_latest": "2026-03-31",
-      "new_points": 21,
-      "changed_points": 21
+      "new_points": 0,
+      "changed_points": 0
     },
     "road_freight": {
       "state": "error",
-      "updated_at": "2026-07-17T13:44:51+00:00",
+      "updated_at": "2026-07-17T13:52:39+00:00",
       "message": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-17T13:44:52+00:00",
+      "updated_at": "2026-07-17T13:52:40+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
-      "new_points": 589,
-      "changed_points": 589
+      "new_points": 0,
+      "changed_points": 0
     }
   },
   "refresh_summary": {
     "successes": 16,
     "failures": 2,
     "total": 18,
-    "actual_changed_points": 635,
-    "updated_at": "2026-07-17T13:47:13+00:00",
+    "actual_changed_points": 4,
+    "updated_at": "2026-07-17T13:54:57+00:00",
     "failed_sources": {
       "production_index": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /enterprise_industrial (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))",
       "road_freight": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
