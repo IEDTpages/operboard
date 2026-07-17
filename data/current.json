@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "generated_at": "2026-07-17T12:04:28+00:00",
+  "schema_version": 3,
+  "generated_at": "2026-07-17T13:43:11+00:00",
   "data_as_of": "2026-07-17",
   "source_mode": "web_refresh",
   "report": {
@@ -14271,7 +14271,7 @@
         85.14,
         85.08,
         84.87,
-        85.96
+        86.66
       ]
     },
     "urals": {
@@ -17710,7 +17710,7 @@
         61.35,
         65.65,
         67.01,
-        68.56
+        69.2
       ]
     },
     "ttf": {
@@ -20613,7 +20613,7 @@
         638.15,
         649.43,
         651.99,
-        678.77
+        673.59
       ]
     },
     "ara": {
@@ -23719,7 +23719,7 @@
         3168.5,
         3151.75,
         3178.5,
-        3146.75
+        3150
       ]
     },
     "wheat": {
@@ -31960,12 +31960,249 @@
           1
         ]
       }
+    },
+    "production_index": {
+      "title": "Индекс промышленного производства",
+      "subtitle": "к тому же месяцу прошлого года",
+      "chart_label": "Промышленное производство, % г/г",
+      "unit": "%",
+      "source": "Росстат",
+      "source_url": "https://rosstat.gov.ru/enterprise_industrial",
+      "value_decimals": 1,
+      "change_decimals": 1,
+      "change_type": "pp",
+      "change_labels": [
+        "к пред. точке",
+        "3 мес.",
+        "г/г"
+      ],
+      "change_days": [
+        "previous",
+        93,
+        365
+      ],
+      "frequency": "monthly",
+      "page": "production",
+      "dates": [
+        "2025-02-28",
+        "2025-03-31",
+        "2025-05-31",
+        "2025-09-30",
+        "2025-11-30",
+        "2025-12-31",
+        "2026-01-31",
+        "2026-02-28",
+        "2026-04-30",
+        "2026-05-31"
+      ],
+      "values": [
+        100.2,
+        100.8,
+        101.8,
+        100.3,
+        99.3,
+        103.7,
+        99.2,
+        99.1,
+        101.9,
+        99.3
+      ]
+    },
+    "exports": {
+      "title": "Экспорт товаров",
+      "subtitle": "методология платежного баланса, квартал",
+      "chart_label": "Экспорт товаров, млрд $",
+      "unit": "млрд $",
+      "source": "ЦБ РФ",
+      "source_url": "https://www.cbr.ru/vfs/statistics/credit_statistics/bop/bal_of_payments_standart.xlsx",
+      "value_decimals": 1,
+      "change_decimals": 1,
+      "change_type": "raw",
+      "change_labels": [
+        "кв/кв",
+        "г/г",
+        "3 года"
+      ],
+      "change_days": [
+        "previous",
+        365,
+        1095
+      ],
+      "frequency": "quarterly",
+      "page": "foreign_trade",
+      "dates": [
+        "2021-03-31",
+        "2021-06-30",
+        "2021-09-30",
+        "2021-12-31",
+        "2022-03-31",
+        "2022-06-30",
+        "2022-09-30",
+        "2022-12-31",
+        "2023-03-31",
+        "2023-06-30",
+        "2023-09-30",
+        "2023-12-31",
+        "2024-03-31",
+        "2024-06-30",
+        "2024-09-30",
+        "2024-12-31",
+        "2025-03-31",
+        "2025-06-30",
+        "2025-09-30",
+        "2025-12-31",
+        "2026-03-31"
+      ],
+      "values": [
+        92.48402,
+        113.8298,
+        130.93502,
+        151.57492,
+        154.18278,
+        150.35598,
+        141.45083,
+        144.50484,
+        104.39932,
+        103.3162,
+        109.17439,
+        109.12417,
+        102.40325,
+        106.64523,
+        108.73327,
+        116.08899,
+        97.36208,
+        99.00297,
+        108.4352,
+        115.93542,
+        99.42397
+      ]
+    },
+    "imports": {
+      "title": "Импорт товаров",
+      "subtitle": "методология платежного баланса, квартал",
+      "chart_label": "Импорт товаров, млрд $",
+      "unit": "млрд $",
+      "source": "ЦБ РФ",
+      "source_url": "https://www.cbr.ru/vfs/statistics/credit_statistics/bop/bal_of_payments_standart.xlsx",
+      "value_decimals": 1,
+      "change_decimals": 1,
+      "change_type": "raw",
+      "change_labels": [
+        "кв/кв",
+        "г/г",
+        "3 года"
+      ],
+      "change_days": [
+        "previous",
+        365,
+        1095
+      ],
+      "frequency": "quarterly",
+      "page": "foreign_trade",
+      "dates": [
+        "2021-03-31",
+        "2021-06-30",
+        "2021-09-30",
+        "2021-12-31",
+        "2022-03-31",
+        "2022-06-30",
+        "2022-09-30",
+        "2022-12-31",
+        "2023-03-31",
+        "2023-06-30",
+        "2023-09-30",
+        "2023-12-31",
+        "2024-03-31",
+        "2024-06-30",
+        "2024-09-30",
+        "2024-12-31",
+        "2025-03-31",
+        "2025-06-30",
+        "2025-09-30",
+        "2025-12-31",
+        "2026-03-31"
+      ],
+      "values": [
+        62.88598,
+        75.47649,
+        77.62108,
+        85.06336,
+        69.76069,
+        56.74145,
+        68.82206,
+        81.18568,
+        74.61774,
+        77.15501,
+        75.69119,
+        75.62245,
+        67.03323,
+        71.22094,
+        78.61498,
+        84.67896,
+        66.72057,
+        75.07454,
+        76.44002,
+        88.11925,
+        73.59674
+      ]
+    },
+    "road_freight": {
+      "title": "Грузы автотранспортом",
+      "subtitle": "объём перевозок",
+      "chart_label": "Перевезено грузов автотранспортом, млн т",
+      "unit": "млн т",
+      "source": "Росстат",
+      "source_url": "https://rosstat.gov.ru/statistics/transport",
+      "value_decimals": 1,
+      "change_decimals": 1,
+      "change_type": "raw",
+      "change_labels": [
+        "к пред. периоду",
+        "3 года",
+        "5 лет"
+      ],
+      "change_days": [
+        "previous",
+        1095,
+        1825
+      ],
+      "frequency": "annual",
+      "page": "road_freight",
+      "empty_message": "Ряд появится после первого успешного обновления файла Росстата.",
+      "dates": [],
+      "values": []
+    },
+    "ati_ftl": {
+      "title": "Индекс ставок ATI.SU FTL",
+      "subtitle": "Россия, полная загрузка 20 т / 82 м³",
+      "chart_label": "Общий индекс ATI.SU FTL, пунктов",
+      "unit": "пунктов",
+      "source": "ATI.SU",
+      "source_url": "https://help.ati.su/price-index",
+      "value_decimals": 1,
+      "change_decimals": 1,
+      "change_type": "raw",
+      "change_labels": [
+        "к пред. дню",
+        "м/м",
+        "г/г"
+      ],
+      "change_days": [
+        "previous",
+        31,
+        365
+      ],
+      "frequency": "daily",
+      "page": "ati_ftl",
+      "empty_message": "Добавьте GitHub Secret ATI_API_TOKEN и запустите workflow обновления.",
+      "dates": [],
+      "values": []
     }
   },
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:01:57+00:00",
+      "updated_at": "2026-07-17T13:40:24+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -31974,7 +32211,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:02:00+00:00",
+      "updated_at": "2026-07-17T13:40:27+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -31983,7 +32220,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:01:58+00:00",
+      "updated_at": "2026-07-17T13:40:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -31992,7 +32229,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:01:58+00:00",
+      "updated_at": "2026-07-17T13:40:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32001,7 +32238,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:01:58+00:00",
+      "updated_at": "2026-07-17T13:40:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32010,7 +32247,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32019,7 +32256,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32028,7 +32265,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32037,16 +32274,16 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -32055,7 +32292,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:02:09+00:00",
+      "updated_at": "2026-07-17T13:40:50+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -32064,7 +32301,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:02:15+00:00",
+      "updated_at": "2026-07-17T13:40:53+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-16",
       "merged_latest": "2026-07-16",
@@ -32073,20 +32310,57 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-17T12:04:28+00:00",
+      "updated_at": "2026-07-17T13:43:11+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
       "new_points": 0,
       "changed_points": 0
+    },
+    "production_index": {
+      "state": "error",
+      "updated_at": "2026-07-17T13:40:37+00:00",
+      "message": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /enterprise_industrial (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
+    },
+    "exports": {
+      "state": "ok",
+      "updated_at": "2026-07-17T13:40:54+00:00",
+      "message": "Обновлено из квартальной книги платежного баланса ЦБ РФ",
+      "fetched_latest": "2026-03-31",
+      "merged_latest": "2026-03-31",
+      "new_points": 21,
+      "changed_points": 21
+    },
+    "imports": {
+      "state": "ok",
+      "updated_at": "2026-07-17T13:40:54+00:00",
+      "message": "Обновлено из квартальной книги платежного баланса ЦБ РФ",
+      "fetched_latest": "2026-03-31",
+      "merged_latest": "2026-03-31",
+      "new_points": 21,
+      "changed_points": 21
+    },
+    "road_freight": {
+      "state": "error",
+      "updated_at": "2026-07-17T13:40:45+00:00",
+      "message": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
+    },
+    "ati_ftl": {
+      "state": "error",
+      "updated_at": "2026-07-17T13:40:45+00:00",
+      "message": "ATI_API_TOKEN не настроен в GitHub Secrets"
     }
   },
   "refresh_summary": {
-    "successes": 13,
-    "failures": 0,
-    "total": 13,
-    "actual_changed_points": 5,
-    "updated_at": "2026-07-17T12:04:28+00:00",
-    "failed_sources": {}
+    "successes": 15,
+    "failures": 3,
+    "total": 18,
+    "actual_changed_points": 46,
+    "updated_at": "2026-07-17T13:43:11+00:00",
+    "failed_sources": {
+      "production_index": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /enterprise_industrial (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))",
+      "road_freight": "HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))",
+      "ati_ftl": "ATI_API_TOKEN не настроен в GitHub Secrets"
+    }
   }
 }
