@@ -1,34 +1,40 @@
-"""Synchronize index.html's offline fallback with data/snapshot.json."""
+# Оперборд — GitHub Pages v7
 
-from __future__ import annotations
+Статическая HTML-версия отчёта с интерактивными графиками и автоматическим обновлением данных через GitHub Actions.
 
-import json
-import re
-from pathlib import Path
+## Изменения версии v7
 
+- индекс производства переведён на ЕМИСС 57806: три вида деятельности и три режима сравнения;
+- экспорт и импорт переведены на ежемесячный лист официальной книги ЦБ РФ;
+- автоперевозки переведены на ЕМИСС 31314;
+- добавлен общий индекс ставок ATI.SU FTL для полной загрузки 20 т / 82 м³;
+- карточки разделены на группы «Показатели российской экономики» и «Мировые товарные рынки»;
+- навигация сгруппирована и использует понятные названия: «Природный газ», «Уголь», «Алюминий» и другие;
+- логотип ИЭРТ увеличен и перенесён в лаконичный блок шапки;
+- CSV-выгрузка доступна для каждого ряда и для совместной страницы экспорта/импорта.
 
-ROOT = Path(__file__).resolve().parents[1]
-INDEX_PATH = ROOT / "index.html"
-SNAPSHOT_PATH = ROOT / "data" / "snapshot.json"
+## ATI.SU
 
+Токен не хранится в HTML, JSON или Python-коде. Сборщик читает его только из переменной окружения `ATI_API_TOKEN`, которую workflow получает из GitHub Actions Secret с тем же именем. Без секрета остальные источники продолжают обновляться, а карточка ATI.SU показывает состояние ожидания.
 
-def main() -> None:
-    payload = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
-    compact = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    html = INDEX_PATH.read_text(encoding="utf-8")
-    replacement = f"const EMBEDDED_DATA={compact};\nconst LOGO_DATA="
-    updated, count = re.subn(
-        r"const EMBEDDED_DATA=.*?;\nconst LOGO_DATA=",
-        replacement,
-        html,
-        count=1,
-        flags=re.DOTALL,
-    )
-    if count != 1:
-        raise RuntimeError("EMBEDDED_DATA block was not found exactly once")
-    INDEX_PATH.write_text(updated, encoding="utf-8")
-    print(f"Embedded {len(payload.get('series', {}))} series into {INDEX_PATH.name}")
+## Архитектура
 
+1. `.github/workflows/pages.yml` проверяет свежесть опубликованных данных.
+2. `refresh_data.py` получает данные с веб-источников. Для ProFinance используется Chromium через Playwright.
+3. Общедоступные показатели загружаются из ЦБ РФ, ЕМИСС, Мосбиржи, ProFinance и IMF PortWatch. Загрузчик ЕМИСС повторяет публичный механизм `fedstatAPIr` и хранит служебный кэш идентификаторов фильтров.
+4. История ATI.SU запрашивается серверным workflow с секретом `ATI_API_TOKEN`.
+5. Свежие данные сохраняются в `data/current.json` и публикуются в GitHub Pages.
+6. `index.html` загружает `data/current.json` без браузерного кэширования.
 
-if __name__ == "__main__":
-    main()
+## Основные файлы
+
+- `index.html` — статический интерактивный дашборд;
+- `refresh_data.py` — загрузка, проверка и слияние данных;
+- `requirements.txt` — Python-зависимости;
+- `.github/workflows/pages.yml` — расписание, Chromium, обновление и публикация;
+- `data/current.json` — последний опубликованный набор данных;
+- `data/snapshot.json` — резервный встроенный набор данных.
+- `tools/sync_embedded_data.py` — синхронизация резервного JSON внутри `index.html`.
+- `tests/test_refresh_data.py` — проверки новых парсеров и безопасного ATI-подключения.
+
+Инструкция по замене файлов находится в `GITHUB_PAGES_SETUP.md`.

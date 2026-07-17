@@ -40,9 +40,12 @@ TIMEOUT_SECONDS = 45
 START_DATE = date(2021, 1, 1)
 
 CBR_TRADE_URL = (
-    "https://www.cbr.ru/vfs/statistics/credit_statistics/bop/"
-    "bal_of_payments_standart.xlsx"
+    "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls"
 )
+FEDSTAT_PRODUCTION_URL = "https://www.fedstat.ru/indicator/57806"
+FEDSTAT_ROAD_URL = "https://www.fedstat.ru/indicator/31314"
+FEDSTAT_DATA_URL = "https://www.fedstat.ru/indicator/data.do?format=sdmx"
+FEDSTAT_CACHE_PATH = DATA_DIR / "fedstat_filters.json"
 ROSSTAT_INDUSTRIAL_URL = "https://rosstat.gov.ru/enterprise_industrial"
 ROSSTAT_TRANSPORT_URL = "https://rosstat.gov.ru/statistics/transport"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
@@ -336,63 +339,730 @@ def fetch_rubcny() -> tuple[list[str], list[float | int]]:
 
 
 def fetch_cbr_trade() -> dict[str, tuple[list[str], list[float | int]]]:
-    """Load quarterly exports/imports of goods from the official CBR workbook."""
+    """Load monthly exports/imports of goods from the official CBR workbook."""
     response = get(CBR_TRADE_URL)
     frame = pd.read_excel(
         io.BytesIO(response.content),
-        sheet_name="Кварталы",
+        sheet_name="Ежемесячные",
         header=None,
     )
 
-    quarter_pattern = re.compile(r"([1-4])\s*квартал\s*(\d{4})", re.IGNORECASE)
     header_row: int | None = None
-    quarter_columns: list[tuple[int, int, int]] = []
-    for row_index in range(min(15, len(frame))):
-        found: list[tuple[int, int, int]] = []
-        for column_index, value in enumerate(frame.iloc[row_index]):
-            match = quarter_pattern.search(str(value or ""))
-            if match:
-                found.append((column_index, int(match.group(1)), int(match.group(2))))
-        if len(found) > len(quarter_columns):
-            header_row, quarter_columns = row_index, found
-    if header_row is None or len(quarter_columns) < 4:
-        raise RuntimeError("ЦБ РФ: в книге платежного баланса не найдены кварталы")
-
-    goods_row: int | None = None
-    for row_index in range(header_row + 1, min(len(frame), header_row + 80)):
-        label = _normalise_header(frame.iat[row_index, 0])
-        if label == "товары":
-            goods_row = row_index
+    for row_index in range(min(20, len(frame))):
+        row_text = " | ".join(_normalise_header(value) for value in frame.iloc[row_index])
+        if "экспорт товаров" in row_text and "импорт товаров" in row_text:
+            header_row = row_index
             break
-    if goods_row is None:
-        raise RuntimeError("ЦБ РФ: в книге платежного баланса не найден раздел «Товары»")
+    if header_row is None:
+        raise RuntimeError("ЦБ РФ: заголовки экспорта и импорта товаров не найдены")
 
-    value_rows: dict[str, int] = {}
-    for row_index in range(goods_row + 1, min(len(frame), goods_row + 7)):
-        label = _normalise_header(frame.iat[row_index, 0])
-        if label == "экспорт":
-            value_rows["exports"] = row_index
-        elif label == "импорт":
-            value_rows["imports"] = row_index
-    if set(value_rows) != {"exports", "imports"}:
-        raise RuntimeError("ЦБ РФ: не найдены строки экспорта и импорта товаров")
+    # The workbook uses a stable two-column period followed by the total
+    # exports and total imports columns. Resolve totals from the merged header
+    # cells instead of relying only on hard-coded positions.
+    export_column: int | None = None
+    import_column: int | None = None
+    current_group = ""
+    for column_index, value in enumerate(frame.iloc[header_row]):
+        label = _normalise_header(value)
+        if "экспорт товаров" in label:
+            current_group = "exports"
+        elif "импорт товаров" in label:
+            current_group = "imports"
+        elif "сальдо" in label:
+            current_group = ""
+        if current_group and column_index + 1 < frame.shape[1]:
+            sublabels = [
+                _normalise_header(frame.iat[row, column_index])
+                for row in range(header_row + 1, min(header_row + 4, len(frame)))
+            ]
+            if "всего" in sublabels:
+                if current_group == "exports" and export_column is None:
+                    export_column = column_index
+                elif current_group == "imports" and import_column is None:
+                    import_column = column_index
+
+    # In the current official layout the merged group title is placed directly
+    # above the total column, so the fallback remains deterministic.
+    export_column = 2 if export_column is None else export_column
+    import_column = 8 if import_column is None else import_column
+
+    rows_by_key: dict[str, list[tuple[date, float]]] = {"exports": [], "imports": []}
+    for row_index in range(header_row + 3, len(frame)):
+        year_number = to_number(frame.iat[row_index, 0])
+        month_text = _normalise_header(frame.iat[row_index, 1])
+        if year_number is None or not float(year_number).is_integer():
+            continue
+        year = int(year_number)
+        if year < START_DATE.year:
+            continue
+        parsed = parse_date(f"1 {month_text} {year}")
+        if parsed is None:
+            continue
+        period_end = date(year, parsed.month, calendar.monthrange(year, parsed.month)[1])
+        for key, column_index in (("exports", export_column), ("imports", import_column)):
+            value = to_number(frame.iat[row_index, column_index])
+            if value is not None:
+                rows_by_key[key].append((period_end, value / 1000.0))
 
     output: dict[str, tuple[list[str], list[float | int]]] = {}
-    for key, row_index in value_rows.items():
-        rows: list[tuple[date, float]] = []
-        for column_index, quarter, year in quarter_columns:
-            if year < START_DATE.year:
-                continue
-            value = to_number(frame.iat[row_index, column_index])
-            if value is None:
-                continue
-            month = quarter * 3
-            period_end = date(year, month, calendar.monthrange(year, month)[1])
-            rows.append((period_end, value / 1000.0))  # workbook is in USD millions
+    for key, rows in rows_by_key.items():
         dates, values = pack_series(rows)
         validate_numeric_series(dates, values, f"ЦБ РФ — {key}")
         output[key] = dates, values
     return output
+
+
+def _extract_balanced_js(text: str, marker: str, opener: str) -> str:
+    marker_index = text.find(marker)
+    if marker_index < 0:
+        raise RuntimeError(f"ЕМИСС: в JavaScript не найден блок {marker}")
+    start = text.find(opener, marker_index + len(marker))
+    if start < 0:
+        raise RuntimeError(f"ЕМИСС: после {marker} не найден символ {opener}")
+    closer = {"{": "}", "[": "]"}[opener]
+    depth = 0
+    quote = ""
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            continue
+        if char in {"'", '"'}:
+            quote = char
+        elif char == opener:
+            depth += 1
+        elif char == closer:
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    raise RuntimeError(f"ЕМИСС: незавершённый JavaScript-блок {marker}")
+
+
+def _javascript_object_to_json(fragment: str) -> Any:
+    """Convert the JSON-like literals embedded in an indicator page."""
+
+    def replace_single_quoted(match: re.Match[str]) -> str:
+        raw = match.group(1)
+        raw = raw.replace("\\'", "'").replace('\\"', '"')
+        raw = raw.replace("\\/", "/")
+        return json.dumps(raw, ensure_ascii=False)
+
+    converted = re.sub(r"'((?:\\.|[^'\\])*)'", replace_single_quoted, fragment)
+    converted = re.sub(
+        r"([\{,]\s*)([A-Za-z_$][A-Za-z0-9_$]*)(\s*:)",
+        lambda match: f'{match.group(1)}"{match.group(2)}"{match.group(3)}',
+        converted,
+    )
+    converted = re.sub(r",\s*([}\]])", r"\1", converted)
+    try:
+        return json.loads(converted)
+    except json.JSONDecodeError as exc:
+        sample = converted[max(0, exc.pos - 180) : exc.pos + 180]
+        raise RuntimeError(f"ЕМИСС: блок фильтров не разобран: {exc}; {sample!r}") from exc
+
+
+def _flatten_strings(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [item for child in value for item in _flatten_strings(child)]
+    if isinstance(value, dict):
+        return [item for child in value.values() for item in _flatten_strings(child)]
+    return []
+
+
+def parse_fedstat_filter_metadata(
+    html: str,
+    indicator_id: str,
+) -> dict[str, Any]:
+    """Parse filter ids from the JavaScript embedded in a Fedstat page.
+
+    Fedstat does not expose a stable documented API for filter identifiers.
+    This follows the same public-page workflow as fedstatAPIr, while keeping
+    the dashboard refresh entirely in Python.
+    """
+    soup = BeautifulSoup(html, "lxml")
+    script = next(
+        (
+            node.get_text("\n", strip=False)
+            for node in soup.find_all("script")
+            if "filters:" in node.get_text() and "left_columns" in node.get_text()
+        ),
+        None,
+    )
+    if not script:
+        raise RuntimeError("ЕМИСС: JavaScript с filters/left_columns не найден")
+
+    filters_raw = _javascript_object_to_json(
+        _extract_balanced_js(script, "filters:", "{")
+    )
+    if not isinstance(filters_raw, dict) or not filters_raw:
+        raise RuntimeError("ЕМИСС: список фильтров пуст")
+
+    object_types: dict[str, str] = {}
+    object_markers = {
+        "left_columns": "lineObjectIds",
+        "top_columns": "columnObjectIds",
+        "groups": "lineObjectIds",
+        # On the page this collection is still sent as lineObjectIds.
+        "filterObjectIds": "lineObjectIds",
+    }
+    for marker, object_type in object_markers.items():
+        if marker not in script:
+            continue
+        try:
+            parsed = _javascript_object_to_json(
+                _extract_balanced_js(script, f"{marker}:", "[")
+            )
+        except RuntimeError:
+            continue
+        for field_id in _flatten_strings(parsed):
+            object_types.setdefault(str(field_id), object_type)
+
+    fields: list[dict[str, Any]] = []
+    for field_id, raw in filters_raw.items():
+        if not isinstance(raw, dict):
+            continue
+        raw_values = raw.get("values") or {}
+        values: list[dict[str, str]] = []
+        if isinstance(raw_values, dict):
+            for value_id, value in raw_values.items():
+                title = value.get("title") if isinstance(value, dict) else value
+                values.append(
+                    {
+                        "id": str(value_id),
+                        "title": BeautifulSoup(str(title or ""), "lxml").get_text(),
+                    }
+                )
+        if values:
+            fields.append(
+                {
+                    "id": str(field_id),
+                    "title": str(raw.get("title") or field_id),
+                    "object_type": object_types.get(str(field_id), "lineObjectIds"),
+                    "values": values,
+                }
+            )
+
+    title_node = soup.select_one("h1") or soup.select_one("title")
+    title = title_node.get_text(" ", strip=True) if title_node else f"Показатель {indicator_id}"
+    fields.insert(
+        0,
+        {
+            "id": "0",
+            "title": "Показатель",
+            "object_type": "filterObjectIds",
+            "values": [{"id": str(indicator_id), "title": title}],
+        },
+    )
+    return {"indicator_id": str(indicator_id), "title": title, "fields": fields}
+
+
+def _load_fedstat_cache() -> dict[str, Any]:
+    try:
+        cache = json.loads(FEDSTAT_CACHE_PATH.read_text(encoding="utf-8"))
+        if isinstance(cache, dict):
+            cache.setdefault("indicators", {})
+            return cache
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        pass
+    return {"schema_version": 1, "indicators": {}}
+
+
+def _save_fedstat_cache(cache: dict[str, Any]) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    temporary = FEDSTAT_CACHE_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(FEDSTAT_CACHE_PATH)
+
+
+def fetch_fedstat_filter_metadata(indicator_id: str, *, force: bool = False) -> dict[str, Any]:
+    cache = _load_fedstat_cache()
+    cached = cache.get("indicators", {}).get(str(indicator_id))
+    if isinstance(cached, dict) and not force:
+        # Year ids in monthly Fedstat indicators equal their displayed year.
+        # Extending a cached year dimension avoids a slow page request at the
+        # start of every new calendar year.
+        for field in cached.get("fields", []):
+            values = field.get("values") or []
+            years = [
+                int(item["title"])
+                for item in values
+                if re.fullmatch(r"20\d{2}", str(item.get("title", "")))
+            ]
+            if len(years) >= 3:
+                known = {str(item.get("id")) for item in values}
+                for year in range(max(START_DATE.year, min(years)), date.today().year + 2):
+                    if str(year) not in known:
+                        values.append({"id": str(year), "title": str(year)})
+        return cached
+
+    response = get(
+        f"https://www.fedstat.ru/indicator/{indicator_id}",
+        headers={
+            "User-Agent": USER_AGENT,
+            "Referer": "https://www.fedstat.ru/",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    metadata = parse_fedstat_filter_metadata(response.text, str(indicator_id))
+    metadata["cached_at"] = now_iso()
+    cache.setdefault("indicators", {})[str(indicator_id)] = metadata
+    cache["updated_at"] = now_iso()
+    _save_fedstat_cache(cache)
+    return metadata
+
+
+def _normalise_fedstat_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower().replace("ё", "е"))
+
+
+def _production_mode_from_text(value: Any) -> str | None:
+    text = _normalise_fedstat_text(value)
+    if "с начала года" in text or "период с начала года" in text:
+        return "ytd_yoy"
+    if "предыдущ" in text and "месяц" in text and "год" not in text:
+        return "mom"
+    if "соответств" in text and ("месяц" in text or "период" in text):
+        return "yoy"
+    return None
+
+
+def _production_activity_from_text(value: Any) -> str | None:
+    text = _normalise_fedstat_text(value)
+    has_mining = "добыча полезных ископаемых" in text
+    has_manufacturing = "обрабатывающие производства" in text
+    if has_mining and has_manufacturing:
+        return "total"
+    if text in {"всего", "итого", "промышленное производство", "промышленность"}:
+        return "total"
+    if "промышленное производство" in text:
+        return "total"
+    if has_mining:
+        return "mining"
+    if has_manufacturing:
+        return "manufacturing"
+    return None
+
+
+def _month_number(value: Any) -> int | None:
+    parsed = parse_date(f"1 {value} 2024")
+    return parsed.month if parsed else None
+
+
+def select_fedstat_filters(metadata: dict[str, Any], kind: str) -> list[dict[str, Any]]:
+    selected: list[dict[str, Any]] = []
+    for field in metadata.get("fields", []):
+        values = [item for item in field.get("values", []) if item.get("id") is not None]
+        if not values:
+            continue
+        field_id = str(field.get("id"))
+        field_title = _normalise_fedstat_text(field.get("title"))
+        chosen: list[dict[str, Any]] = []
+
+        if field_id == "0":
+            chosen = values[:1]
+        else:
+            year_values = [
+                item
+                for item in values
+                if re.fullmatch(r"20\d{2}", str(item.get("title", "")).strip())
+            ]
+            month_values = [item for item in values if _month_number(item.get("title"))]
+            if "год" in field_title and year_values:
+                chosen = [
+                    item for item in year_values if int(str(item["title"]).strip()) >= START_DATE.year
+                ]
+            elif len(month_values) >= 10:
+                chosen = month_values
+            elif any(token in field_title for token in ("террит", "окато", "субъект")):
+                exact = [
+                    item
+                    for item in values
+                    if _normalise_fedstat_text(item.get("title")) == "российская федерация"
+                ]
+                candidates = exact or [
+                    item
+                    for item in values
+                    if _normalise_fedstat_text(item.get("title")).startswith("российская федерация")
+                ]
+                if candidates:
+                    chosen = [min(candidates, key=lambda item: len(str(item.get("title", ""))))]
+            elif kind == "production":
+                by_mode: dict[str, list[dict[str, Any]]] = {}
+                by_activity: dict[str, list[dict[str, Any]]] = {}
+                for item in values:
+                    mode = _production_mode_from_text(item.get("title"))
+                    activity = _production_activity_from_text(item.get("title"))
+                    if mode:
+                        by_mode.setdefault(mode, []).append(item)
+                    if activity:
+                        by_activity.setdefault(activity, []).append(item)
+                if set(by_mode) >= {"mom", "yoy", "ytd_yoy"}:
+                    chosen = [
+                        min(by_mode[key], key=lambda item: len(str(item.get("title", ""))))
+                        for key in ("mom", "yoy", "ytd_yoy")
+                    ]
+                elif set(by_activity) >= {"total", "mining", "manufacturing"}:
+                    chosen = [
+                        min(by_activity[key], key=lambda item: len(str(item.get("title", ""))))
+                        for key in ("total", "mining", "manufacturing")
+                    ]
+                elif any("процент" in _normalise_fedstat_text(item.get("title")) for item in values):
+                    chosen = [
+                        item
+                        for item in values
+                        if "процент" in _normalise_fedstat_text(item.get("title"))
+                    ][:1]
+            elif kind == "road":
+                automobile = [
+                    item
+                    for item in values
+                    if "автомоб" in _normalise_fedstat_text(item.get("title"))
+                ]
+                if automobile:
+                    chosen = [min(automobile, key=lambda item: len(str(item.get("title", ""))))]
+
+        if not chosen:
+            if len(values) <= 20:
+                chosen = values
+            else:
+                preview = ", ".join(str(item.get("title")) for item in values[:5])
+                raise RuntimeError(
+                    f"ЕМИСС: не удалось сузить фильтр «{field.get('title')}» "
+                    f"({len(values)} значений; пример: {preview})"
+                )
+        selected.append({**field, "values": chosen})
+    return selected
+
+
+def post_fedstat_sdmx(metadata: dict[str, Any], selected: list[dict[str, Any]]) -> bytes:
+    indicator_id = str(metadata["indicator_id"])
+    body: list[tuple[str, str]] = [
+        ("format", "sdmx"),
+        ("id", indicator_id),
+        ("indicator_title", str(metadata.get("title") or f"Показатель {indicator_id}")),
+    ]
+    seen_fields: set[str] = set()
+    for field in selected:
+        field_id = str(field["id"])
+        if field_id not in seen_fields:
+            body.append((str(field.get("object_type") or "lineObjectIds"), field_id))
+            seen_fields.add(field_id)
+        for value in field.get("values", []):
+            body.append(("selectedFilterIds", f"{field_id}_{value['id']}"))
+
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            response = SESSION.post(
+                FEDSTAT_DATA_URL,
+                data=body,
+                headers={
+                    "User-Agent": USER_AGENT,
+                    "Referer": f"https://www.fedstat.ru/indicator/{indicator_id}",
+                    "Origin": "https://www.fedstat.ru",
+                    "Accept": "application/xml,text/xml,*/*",
+                },
+                timeout=TIMEOUT_SECONDS * 2,
+            )
+            response.raise_for_status()
+            content_type = response.headers.get("Content-Type", "").lower()
+            if "xml" not in content_type and not response.content.lstrip().startswith(b"<"):
+                raise RuntimeError(f"ЕМИСС: вместо SDMX получен {content_type or 'неизвестный формат'}")
+            return response.content
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt < 3:
+                time.sleep(attempt * 2)
+    assert last_error is not None
+    raise last_error
+
+
+def _xml_local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1].split(":")[-1]
+
+
+def parse_fedstat_sdmx(content: bytes) -> list[dict[str, Any]]:
+    root = ET.fromstring(content)
+    dictionaries: dict[str, dict[str, str]] = {}
+    field_titles: dict[str, str] = {}
+    for code_list in (item for item in root.iter() if _xml_local_name(item.tag) == "CodeList"):
+        field_id = str(code_list.attrib.get("id") or "")
+        if not field_id:
+            continue
+        name = next(
+            (
+                " ".join(child.itertext()).strip()
+                for child in code_list
+                if _xml_local_name(child.tag) in {"Name", "Description"}
+                and " ".join(child.itertext()).strip()
+            ),
+            field_id,
+        )
+        field_titles[field_id] = name
+        mapping: dict[str, str] = {}
+        for code in (item for item in code_list if _xml_local_name(item.tag) == "Code"):
+            value_id = str(code.attrib.get("value") or code.attrib.get("id") or "")
+            title = " ".join(code.itertext()).strip()
+            if value_id:
+                mapping[value_id] = title or value_id
+        dictionaries[field_id] = mapping
+
+    def dimension_values(parent: ET.Element | None) -> dict[str, str]:
+        output: dict[str, str] = {}
+        if parent is None:
+            return output
+        for value in parent.iter():
+            if _xml_local_name(value.tag) != "Value":
+                continue
+            concept = str(value.attrib.get("concept") or value.attrib.get("id") or "")
+            raw = str(value.attrib.get("value") or (value.text or ""))
+            if concept:
+                output[concept] = raw
+        return output
+
+    records: list[dict[str, Any]] = []
+    series_nodes = [item for item in root.iter() if _xml_local_name(item.tag) == "Series"]
+    containers = series_nodes or [root]
+    for series in containers:
+        series_key = next(
+            (item for item in series if _xml_local_name(item.tag) == "SeriesKey"),
+            None,
+        )
+        series_dimensions = dimension_values(series_key)
+        observations = [item for item in series.iter() if _xml_local_name(item.tag) == "Obs"]
+        for observation in observations:
+            dimensions = {**series_dimensions, **dimension_values(observation)}
+            time_value = next(
+                (
+                    (item.attrib.get("value") or item.text or "").strip()
+                    for item in observation.iter()
+                    if _xml_local_name(item.tag) in {"Time", "TimePeriod"}
+                ),
+                "",
+            )
+            obs_value = next(
+                (
+                    item.attrib.get("value") or item.text
+                    for item in observation.iter()
+                    if _xml_local_name(item.tag) in {"ObsValue", "Value"}
+                    and (
+                        _xml_local_name(item.tag) == "ObsValue"
+                        or str(item.attrib.get("concept", "")).lower() in {"obsvalue", "obs_value"}
+                    )
+                ),
+                None,
+            )
+            number = to_number(obs_value)
+            if number is None:
+                continue
+            human_dimensions: dict[str, str] = {}
+            for concept, raw in dimensions.items():
+                title = field_titles.get(concept, concept)
+                human_dimensions[title] = dictionaries.get(concept, {}).get(raw, raw)
+            records.append(
+                {
+                    "time": time_value,
+                    "value": number,
+                    "dimensions": human_dimensions,
+                    "codes": dimensions,
+                }
+            )
+    if not records:
+        raise RuntimeError("ЕМИСС: SDMX не содержит числовых наблюдений")
+    return records
+
+
+def fetch_fedstat_records(indicator_id: str, kind: str) -> list[dict[str, Any]]:
+    metadata = fetch_fedstat_filter_metadata(indicator_id)
+    try:
+        content = post_fedstat_sdmx(metadata, select_fedstat_filters(metadata, kind))
+    except Exception:
+        # Cached filter ids can be retired after an indicator redesign. Refresh
+        # them once and repeat the small filtered query.
+        metadata = fetch_fedstat_filter_metadata(indicator_id, force=True)
+        content = post_fedstat_sdmx(metadata, select_fedstat_filters(metadata, kind))
+    return parse_fedstat_sdmx(content)
+
+
+def _fedstat_record_period(record: dict[str, Any]) -> date | None:
+    time_text = str(record.get("time") or "").strip()
+    match = re.fullmatch(r"(20\d{2})[-/]?(?:M)?(0?[1-9]|1[0-2])", time_text, re.IGNORECASE)
+    if match:
+        year, month = int(match.group(1)), int(match.group(2))
+        return date(year, month, calendar.monthrange(year, month)[1])
+
+    year: int | None = None
+    month: int | None = None
+    if re.fullmatch(r"20\d{2}", time_text):
+        year = int(time_text)
+    for field, value in (record.get("dimensions") or {}).items():
+        field_text = _normalise_fedstat_text(field)
+        value_text = str(value).strip()
+        if "год" in field_text and re.fullmatch(r"20\d{2}", value_text):
+            year = int(value_text)
+        if "месяц" in field_text or "период" in field_text:
+            month = _month_number(value_text) or month
+    if year and month:
+        return date(year, month, calendar.monthrange(year, month)[1])
+    if year:
+        return date(year, 12, 31)
+    parsed = parse_date(time_text)
+    return parsed
+
+
+PRODUCTION_MODES: dict[str, str] = {
+    "mom": "Отчётный месяц к предыдущему месяцу",
+    "yoy": "Отчётный месяц к соответствующему месяцу предыдущего года",
+    "ytd_yoy": "Период с начала года к соответствующему периоду предыдущего года",
+}
+PRODUCTION_LINES: dict[str, str] = {
+    "total": "Совокупный индекс",
+    "mining": "Добыча полезных ископаемых",
+    "manufacturing": "Обрабатывающие производства",
+}
+
+
+def parse_fedstat_production_records(records: list[dict[str, Any]]) -> dict[str, Any]:
+    grouped: dict[str, dict[str, list[tuple[date, float]]]] = {
+        mode: {line: [] for line in PRODUCTION_LINES} for mode in PRODUCTION_MODES
+    }
+    samples: list[str] = []
+    for record in records:
+        dimensions = record.get("dimensions") or {}
+        texts = list(dimensions.values())
+        mode = next((_production_mode_from_text(item) for item in texts if _production_mode_from_text(item)), None)
+        line = next(
+            (_production_activity_from_text(item) for item in texts if _production_activity_from_text(item)),
+            None,
+        )
+        period = _fedstat_record_period(record)
+        value = to_number(record.get("value"))
+        if mode and line and period and value is not None and period >= START_DATE:
+            grouped[mode][line].append((period, value))
+        elif len(samples) < 5:
+            samples.append(" | ".join(str(item) for item in texts))
+
+    modes: dict[str, Any] = {}
+    missing: list[str] = []
+    for mode, label in PRODUCTION_MODES.items():
+        maps: dict[str, dict[str, float | int]] = {}
+        for line in PRODUCTION_LINES:
+            dates, values = pack_series(grouped[mode][line])
+            maps[line] = dict(zip(dates, values, strict=True))
+            if not dates:
+                missing.append(f"{mode}/{line}")
+        common_dates = sorted(set.intersection(*(set(values) for values in maps.values()))) if maps else []
+        modes[mode] = {
+            "label": label,
+            "dates": common_dates,
+            "series": {
+                line: [maps[line][item] for item in common_dates] for line in PRODUCTION_LINES
+            },
+        }
+    if missing:
+        raise RuntimeError(
+            "ЕМИСС 57806: не распознаны ряды " + ", ".join(missing) +
+            (f"; примеры: {'; '.join(samples)}" if samples else "")
+        )
+    return {
+        "default_mode": "mom",
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": modes,
+    }
+
+
+def fetch_fedstat_production() -> dict[str, Any]:
+    return parse_fedstat_production_records(fetch_fedstat_records("57806", "production"))
+
+
+def merge_production_series(existing: dict[str, Any], fetched: dict[str, Any]) -> dict[str, Any]:
+    old_modes = existing.get("modes") or {}
+    output_modes: dict[str, Any] = {}
+    changed_points = 0
+    new_points = 0
+    fetched_latest: str | None = None
+
+    for mode, label in PRODUCTION_MODES.items():
+        old_mode = old_modes.get(mode) or {}
+        new_mode = fetched["modes"].get(mode) or {}
+        line_maps: dict[str, dict[str, float | int]] = {}
+        for line in PRODUCTION_LINES:
+            old_map = {
+                item_date: value
+                for item_date, value in zip(
+                    old_mode.get("dates", []),
+                    (old_mode.get("series") or {}).get(line, []),
+                    strict=False,
+                )
+                if parse_date(item_date) and to_number(value) is not None
+            }
+            merged = dict(old_map)
+            for item_date, value in zip(
+                new_mode.get("dates", []),
+                (new_mode.get("series") or {}).get(line, []),
+                strict=False,
+            ):
+                if item_date not in old_map:
+                    new_points += 1
+                if old_map.get(item_date) != value:
+                    changed_points += 1
+                merged[item_date] = value
+            line_maps[line] = merged
+        common_dates = sorted(set.intersection(*(set(values) for values in line_maps.values())))
+        output_modes[mode] = {
+            "label": label,
+            "dates": common_dates,
+            "series": {
+                line: [line_maps[line][item] for item in common_dates] for line in PRODUCTION_LINES
+            },
+        }
+        if new_mode.get("dates"):
+            fetched_latest = max(fetched_latest or "", new_mode["dates"][-1])
+
+    default_mode = str(fetched.get("default_mode") or "mom")
+    default = output_modes[default_mode]
+    return {
+        "default_mode": default_mode,
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": output_modes,
+        "dates": default["dates"],
+        "values": default["series"]["total"],
+        "changed_points": changed_points,
+        "new_points": new_points,
+        "fetched_latest": fetched_latest,
+        "merged_latest": default["dates"][-1],
+    }
+
+
+def parse_fedstat_road_records(records: list[dict[str, Any]]) -> tuple[list[str], list[float | int]]:
+    rows: list[tuple[date, float]] = []
+    for record in records:
+        period = _fedstat_record_period(record)
+        value = to_number(record.get("value"))
+        if period is None or value is None or period < START_DATE:
+            continue
+        unit_text = " ".join(str(item) for item in (record.get("dimensions") or {}).values())
+        unit = _normalise_fedstat_text(unit_text)
+        if "тыс" in unit and "тон" in unit:
+            value /= 1000.0
+        rows.append((period, value))
+    dates, values = pack_series(rows)
+    validate_numeric_series(dates, values, "ЕМИСС 31314 — автоперевозки")
+    return dates, values
+
+
+def fetch_fedstat_road_freight() -> tuple[list[str], list[float | int]]:
+    return parse_fedstat_road_records(fetch_fedstat_records("31314", "road"))
 
 
 def _extract_production_point(text: str) -> tuple[date, float] | None:
@@ -1013,29 +1683,37 @@ def merge_hormuz_series(
 
 SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
     "production_index": {
-        "title": "Индекс промышленного производства",
-        "subtitle": "к тому же месяцу прошлого года",
-        "chart_label": "Промышленное производство, % г/г",
+        "title": "Индекс производства",
+        "subtitle": "отчётный месяц к предыдущему",
+        "chart_label": "Совокупный индекс производства, %",
         "unit": "%",
-        "source": "Росстат",
-        "source_url": ROSSTAT_INDUSTRIAL_URL,
+        "source": "ЕМИСС / Росстат",
+        "source_url": FEDSTAT_PRODUCTION_URL,
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "pp",
-        "change_labels": ["к пред. точке", "3 мес.", "г/г"],
+        "change_labels": ["к пред. мес.", "3 мес.", "12 мес."],
         "change_days": ["previous", 93, 365],
         "frequency": "monthly",
         "page": "production",
-        "dates": [
-            "2025-02-28", "2025-03-31", "2025-05-31", "2025-09-30",
-            "2025-11-30", "2025-12-31", "2026-01-31", "2026-02-28",
-            "2026-04-30", "2026-05-31",
-        ],
-        "values": [100.2, 100.8, 101.8, 100.3, 99.3, 103.7, 99.2, 99.1, 101.9, 99.3],
+        "default_mode": "mom",
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": {
+            mode: {
+                "label": label,
+                "dates": [],
+                "series": {line: [] for line in PRODUCTION_LINES},
+            }
+            for mode, label in PRODUCTION_MODES.items()
+        },
+        "dates": [],
+        "values": [],
+        "empty_message": "Ряд появится после первого успешного обновления ЕМИСС 57806.",
     },
     "exports": {
         "title": "Экспорт товаров",
-        "subtitle": "методология платежного баланса, квартал",
+        "subtitle": "методология платежного баланса, месяц",
         "chart_label": "Экспорт товаров, млрд $",
         "unit": "млрд $",
         "source": "ЦБ РФ",
@@ -1043,16 +1721,16 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "raw",
-        "change_labels": ["кв/кв", "г/г", "3 года"],
+        "change_labels": ["м/м", "г/г", "3 года"],
         "change_days": ["previous", 365, 1095],
-        "frequency": "quarterly",
+        "frequency": "monthly",
         "page": "foreign_trade",
         "dates": [],
         "values": [],
     },
     "imports": {
         "title": "Импорт товаров",
-        "subtitle": "методология платежного баланса, квартал",
+        "subtitle": "методология платежного баланса, месяц",
         "chart_label": "Импорт товаров, млрд $",
         "unit": "млрд $",
         "source": "ЦБ РФ",
@@ -1060,9 +1738,9 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "raw",
-        "change_labels": ["кв/кв", "г/г", "3 года"],
+        "change_labels": ["м/м", "г/г", "3 года"],
         "change_days": ["previous", 365, 1095],
-        "frequency": "quarterly",
+        "frequency": "monthly",
         "page": "foreign_trade",
         "dates": [],
         "values": [],
@@ -1072,8 +1750,8 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         "subtitle": "объём перевозок",
         "chart_label": "Перевезено грузов автотранспортом, млн т",
         "unit": "млн т",
-        "source": "Росстат",
-        "source_url": ROSSTAT_TRANSPORT_URL,
+        "source": "ЕМИСС / Росстат",
+        "source_url": FEDSTAT_ROAD_URL,
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "raw",
@@ -1081,7 +1759,7 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         "change_days": ["previous", 1095, 1825],
         "frequency": "annual",
         "page": "road_freight",
-        "empty_message": "Ряд появится после первого успешного обновления файла Росстата.",
+        "empty_message": "Ряд появится после первого успешного обновления ЕМИСС 31314.",
         "dates": [],
         "values": [],
     },
@@ -1168,8 +1846,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         "rubeur": fetch_rubeur,
         "rubcny": fetch_rubcny,
         "cpi": fetch_bizon,
-        "production_index": fetch_rosstat_production,
-        "road_freight": fetch_rosstat_road_freight,
+        "road_freight": fetch_fedstat_road_freight,
         "ati_ftl": fetch_ati_ftl,
         "wheat": lambda: fetch_moex("WHFOB"),
         "oil": lambda: fetch_moex("SOEXP"),
@@ -1199,7 +1876,34 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
             }
             log(f"[refresh] {key}: ERROR: {message}")
 
-    log("[refresh] CBR foreign trade: loading quarterly workbook…")
+    log("[refresh] production_index: loading Fedstat 57806…")
+    try:
+        fetched = fetch_fedstat_production()
+        result = merge_production_series(updated["series"]["production_index"], fetched)
+        for field in (
+            "default_mode", "mode_labels", "series_labels", "modes", "dates", "values"
+        ):
+            updated["series"]["production_index"][field] = result[field]
+        updated["status"]["production_index"] = status_ok(
+            result, "Обновлено из ЕМИСС, показатель 57806"
+        )
+        successes += 1
+        actual_changes += int(result["changed_points"])
+        log(
+            f"[refresh] production_index: OK; fetched_latest={result['fetched_latest']}; "
+            f"new={result['new_points']}; changed={result['changed_points']}"
+        )
+    except Exception as exc:  # noqa: BLE001
+        message = str(exc)[:1000]
+        failures["production_index"] = message
+        updated["status"]["production_index"] = {
+            "state": "error",
+            "updated_at": now_iso(),
+            "message": message,
+        }
+        log(f"[refresh] production_index: ERROR: {message}")
+
+    log("[refresh] CBR foreign trade: loading monthly workbook…")
     try:
         trade_results = fetch_cbr_trade()
         for key in ("exports", "imports"):
@@ -1208,7 +1912,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
             updated["series"][key]["dates"] = result["dates"]
             updated["series"][key]["values"] = result["values"]
             updated["status"][key] = status_ok(
-                result, "Обновлено из квартальной книги платежного баланса ЦБ РФ"
+                result, "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ"
             )
             successes += 1
             actual_changes += int(result["changed_points"])
@@ -1289,7 +1993,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         }
         log(f"[refresh] hormuz: ERROR: {message}")
 
-    total = len(request_jobs) + 2 + len(PROFINANCE) + 1
+    total = len(request_jobs) + 1 + 2 + len(PROFINANCE) + 1
     latest_dates = [
         series["dates"][-1]
         for series in updated.get("series", {}).values()
