@@ -96,6 +96,7 @@ jobs:
         shell: bash
         env:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
+          ATI_API_TOKEN: ${{ secrets.ATI_API_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -131,15 +132,19 @@ jobs:
           from pathlib import Path
 
           payload = json.loads(Path("data/current.json").read_text(encoding="utf-8"))
-          required = {"rubusd", "rubeur", "rubcny"}
+          required = {
+              "rubusd", "rubeur", "rubcny", "production_index",
+              "exports", "imports", "road_freight", "ati_ftl",
+          }
           missing = required.difference(payload.get("series", {}))
           if missing:
-              raise SystemExit(f"Missing currency series: {sorted(missing)}")
-          for key in sorted(required):
+              raise SystemExit(f"Missing dashboard series: {sorted(missing)}")
+          non_empty = {"rubusd", "rubeur", "rubcny", "production_index", "exports", "imports"}
+          for key in sorted(non_empty):
               dates = payload["series"][key].get("dates", [])
               values = payload["series"][key].get("values", [])
               if not dates or len(dates) != len(values):
-                  raise SystemExit(f"Invalid currency series {key}: {len(dates)} dates / {len(values)} values")
+                  raise SystemExit(f"Invalid required series {key}: {len(dates)} dates / {len(values)} values")
               print(f"{key}: {dates[-1]} = {values[-1]}")
           PY
 
