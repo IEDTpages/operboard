@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import calendar
+import io
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -10,6 +13,7 @@ import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urljoin
 
 import pandas as pd
 import requests
@@ -34,6 +38,14 @@ USER_AGENT = (
 )
 TIMEOUT_SECONDS = 45
 START_DATE = date(2021, 1, 1)
+
+CBR_TRADE_URL = (
+    "https://www.cbr.ru/vfs/statistics/credit_statistics/bop/"
+    "bal_of_payments_standart.xlsx"
+)
+ROSSTAT_INDUSTRIAL_URL = "https://rosstat.gov.ru/enterprise_industrial"
+ROSSTAT_TRANSPORT_URL = "https://rosstat.gov.ru/statistics/transport"
+ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
 
 SESSION = requests.Session()
 SESSION.headers.update(
@@ -69,6 +81,33 @@ def get(url: str, *, attempts: int = 3, **kwargs: Any) -> requests.Response:
             response.raise_for_status()
             return response
         except Exception as exc:  # noqa: BLE001 - log precise external-source failure
+            last_error = exc
+            if attempt < attempts:
+                time.sleep(attempt * 2)
+    assert last_error is not None
+    raise last_error
+
+
+def post_json(
+    url: str,
+    *,
+    payload: dict[str, Any],
+    headers: dict[str, str] | None = None,
+    attempts: int = 3,
+) -> requests.Response:
+    """POST JSON without ever putting authorization values into logs."""
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response = SESSION.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            return response
+        except Exception as exc:  # noqa: BLE001 - caller records source status
             last_error = exc
             if attempt < attempts:
                 time.sleep(attempt * 2)
@@ -121,7 +160,7 @@ def parse_date(value: Any) -> date | None:
         "фев": 2, "феврал": 2,
         "мар": 3, "март": 3,
         "апр": 4, "апрел": 4,
-        "май": 5, "мая": 5,
+        "май": 5, "мая": 5, "мае": 5,
         "июн": 6, "июнь": 6, "июня": 6,
         "июл": 7, "июль": 7, "июля": 7,
         "авг": 8, "август": 8,
@@ -294,6 +333,290 @@ def fetch_rubeur() -> tuple[list[str], list[float | int]]:
 
 def fetch_rubcny() -> tuple[list[str], list[float | int]]:
     return fetch_cbr_currency("R01375", "CNY/RUB")
+
+
+def fetch_cbr_trade() -> dict[str, tuple[list[str], list[float | int]]]:
+    """Load quarterly exports/imports of goods from the official CBR workbook."""
+    response = get(CBR_TRADE_URL)
+    frame = pd.read_excel(
+        io.BytesIO(response.content),
+        sheet_name="Кварталы",
+        header=None,
+    )
+
+    quarter_pattern = re.compile(r"([1-4])\s*квартал\s*(\d{4})", re.IGNORECASE)
+    header_row: int | None = None
+    quarter_columns: list[tuple[int, int, int]] = []
+    for row_index in range(min(15, len(frame))):
+        found: list[tuple[int, int, int]] = []
+        for column_index, value in enumerate(frame.iloc[row_index]):
+            match = quarter_pattern.search(str(value or ""))
+            if match:
+                found.append((column_index, int(match.group(1)), int(match.group(2))))
+        if len(found) > len(quarter_columns):
+            header_row, quarter_columns = row_index, found
+    if header_row is None or len(quarter_columns) < 4:
+        raise RuntimeError("ЦБ РФ: в книге платежного баланса не найдены кварталы")
+
+    goods_row: int | None = None
+    for row_index in range(header_row + 1, min(len(frame), header_row + 80)):
+        label = _normalise_header(frame.iat[row_index, 0])
+        if label == "товары":
+            goods_row = row_index
+            break
+    if goods_row is None:
+        raise RuntimeError("ЦБ РФ: в книге платежного баланса не найден раздел «Товары»")
+
+    value_rows: dict[str, int] = {}
+    for row_index in range(goods_row + 1, min(len(frame), goods_row + 7)):
+        label = _normalise_header(frame.iat[row_index, 0])
+        if label == "экспорт":
+            value_rows["exports"] = row_index
+        elif label == "импорт":
+            value_rows["imports"] = row_index
+    if set(value_rows) != {"exports", "imports"}:
+        raise RuntimeError("ЦБ РФ: не найдены строки экспорта и импорта товаров")
+
+    output: dict[str, tuple[list[str], list[float | int]]] = {}
+    for key, row_index in value_rows.items():
+        rows: list[tuple[date, float]] = []
+        for column_index, quarter, year in quarter_columns:
+            if year < START_DATE.year:
+                continue
+            value = to_number(frame.iat[row_index, column_index])
+            if value is None:
+                continue
+            month = quarter * 3
+            period_end = date(year, month, calendar.monthrange(year, month)[1])
+            rows.append((period_end, value / 1000.0))  # workbook is in USD millions
+        dates, values = pack_series(rows)
+        validate_numeric_series(dates, values, f"ЦБ РФ — {key}")
+        output[key] = dates, values
+    return output
+
+
+def _extract_production_point(text: str) -> tuple[date, float] | None:
+    clean = re.sub(r"\s+", " ", text.replace("\xa0", " ")).lower().replace("ё", "е")
+    patterns = (
+        r"индекс промышленного производства в ([а-я]+) (\d{4}) года "
+        r"по сравнению с[^.]{0,220}?составил\s+([\d.,]+)\s*%",
+        r"индекс промышленного производства в ([а-я]+) (\d{4}) года[^.]{0,260}?"
+        r"составил\s+([\d.,]+)\s*%",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, clean, re.IGNORECASE)
+        if not match:
+            continue
+        parsed = parse_date(f"1 {match.group(1)} {match.group(2)}")
+        value = to_number(match.group(3))
+        if parsed and value is not None:
+            return (
+                date(parsed.year, parsed.month, calendar.monthrange(parsed.year, parsed.month)[1]),
+                value,
+            )
+    return None
+
+
+def fetch_rosstat_production() -> tuple[list[str], list[float | int]]:
+    """Read the latest monthly industrial-production headline from Rosstat."""
+    response = get(ROSSTAT_INDUSTRIAL_URL)
+    soup = BeautifulSoup(response.text, "lxml")
+    candidates: list[str] = []
+    for anchor in soup.select("a[href]"):
+        container = anchor.parent.parent if anchor.parent and anchor.parent.parent else anchor
+        text = _normalise_header(container.get_text(" ", strip=True))
+        href = anchor.get("href", "")
+        if "промышлен" not in text or not href:
+            continue
+        url = urljoin(ROSSTAT_INDUSTRIAL_URL, href)
+        if url not in candidates and ("/document/" in url or url.endswith((".html", ".htm"))):
+            candidates.append(url)
+
+    pages = [(ROSSTAT_INDUSTRIAL_URL, response.text)]
+    for url in candidates[:10]:
+        try:
+            pages.append((url, get(url, attempts=1).text))
+        except Exception:  # noqa: BLE001 - try the next official release
+            continue
+
+    points: list[tuple[date, float]] = []
+    for _, html in pages:
+        text = BeautifulSoup(html, "lxml").get_text(" ", strip=True)
+        point = _extract_production_point(text)
+        if point:
+            points.append(point)
+    if not points:
+        raise RuntimeError("Росстат: актуальный месячный индекс производства не распознан")
+    dates, values = pack_series(points)
+    validate_numeric_series(dates, values, "Росстат — промышленное производство")
+    return dates, values
+
+
+def _parse_period_cell(value: Any) -> date | None:
+    """Recognise a year, quarter, month or explicit date in a Rosstat workbook."""
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    ):
+        year = int(value)
+        if 1990 <= year <= date.today().year + 1 and float(value).is_integer():
+            return date(year, 12, 31)
+    text = _normalise_header(value)
+    year_match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*г\.?)?", text)
+    if year_match:
+        return date(int(year_match.group(1)), 12, 31)
+    quarter_match = re.search(r"([1-4])\s*квартал\s*(20\d{2})", text)
+    if quarter_match:
+        quarter, year = int(quarter_match.group(1)), int(quarter_match.group(2))
+        month = quarter * 3
+        return date(year, month, calendar.monthrange(year, month)[1])
+    month_match = re.search(r"([а-я]+)[\s-]+(20\d{2})", text)
+    if month_match:
+        parsed = parse_date(f"1 {month_match.group(1)} {month_match.group(2)}")
+        if parsed:
+            return date(parsed.year, parsed.month, calendar.monthrange(parsed.year, parsed.month)[1])
+    parsed = parse_date(value)
+    return parsed if parsed and parsed.year >= 1990 else None
+
+
+def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float | int]]:
+    """Extract the national road-freight time series from a Rosstat workbook.
+
+    Rosstat periodically changes the workbook layout, so the parser supports
+    both wide tables (periods in columns) and long two-column tables.
+    """
+    workbook = pd.ExcelFile(io.BytesIO(content))
+    best_rows: list[tuple[date, float]] = []
+    best_score = -1
+
+    for sheet_name in workbook.sheet_names:
+        frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+        text_blob = " ".join(_normalise_header(value) for value in frame.to_numpy().ravel())
+        sheet_bonus = 20 if "автомоб" in text_blob and "груз" in text_blob else 0
+
+        # Wide table: one row contains periods and a nearby row contains values.
+        for header_index in range(len(frame)):
+            periods = [
+                (column_index, _parse_period_cell(value))
+                for column_index, value in enumerate(frame.iloc[header_index])
+            ]
+            periods = [(column, period) for column, period in periods if period]
+            if len(periods) < 3:
+                continue
+            for value_index in range(max(0, header_index - 8), min(len(frame), header_index + 9)):
+                if value_index == header_index:
+                    continue
+                rows: list[tuple[date, float]] = []
+                for column_index, period in periods:
+                    number = to_number(frame.iat[value_index, column_index])
+                    if number is not None:
+                        rows.append((period, number))
+                if len(rows) < 3:
+                    continue
+                context = " ".join(
+                    _normalise_header(value)
+                    for value in frame.iloc[value_index, : min(5, frame.shape[1])]
+                )
+                score = len(rows) + sheet_bonus
+                if "автомоб" in context:
+                    score += 30
+                if "груз" in context:
+                    score += 15
+                if score > best_score:
+                    best_rows, best_score = rows, score
+
+        # Long table: each row has a period and a numeric value.
+        long_rows: list[tuple[date, float]] = []
+        for row_index in range(len(frame)):
+            period: date | None = None
+            period_column: int | None = None
+            for column_index, value in enumerate(frame.iloc[row_index]):
+                period = _parse_period_cell(value)
+                if period:
+                    period_column = column_index
+                    break
+            if period is None:
+                continue
+            numbers = [
+                to_number(value)
+                for column_index, value in enumerate(frame.iloc[row_index])
+                if column_index != period_column
+            ]
+            number = next((value for value in numbers if value is not None), None)
+            if number is not None:
+                long_rows.append((period, number))
+        if len(long_rows) >= 3 and len(long_rows) + sheet_bonus > best_score:
+            best_rows, best_score = long_rows, len(long_rows) + sheet_bonus
+
+    best_rows = [(period, value) for period, value in best_rows if period >= START_DATE]
+    if not best_rows:
+        raise RuntimeError("Росстат: ряд автоперевозок в XLSX не распознан")
+    median = sorted(abs(value) for _, value in best_rows)[len(best_rows) // 2]
+    if median > 100_000:  # some releases use thousand tonnes; dashboard uses million tonnes
+        best_rows = [(period, value / 1000.0) for period, value in best_rows]
+    dates, values = pack_series(best_rows)
+    validate_numeric_series(dates, values, "Росстат — автоперевозки")
+    return dates, values
+
+
+def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
+    response = get(ROSSTAT_TRANSPORT_URL)
+    soup = BeautifulSoup(response.text, "lxml")
+    ranked_candidates: list[tuple[int, str]] = []
+    for anchor in soup.select("a[href]"):
+        container = anchor.parent.parent if anchor.parent and anchor.parent.parent else anchor
+        text = _normalise_header(container.get_text(" ", strip=True))
+        href = anchor.get("href", "")
+        href_lower = href.lower()
+        relevant_text = "автомоб" in text and "груз" in text
+        if href_lower.endswith(".xlsx") and ("perevgruz" in href_lower or relevant_text):
+            ranked_candidates.append(
+                (0 if "perevgruz" in href_lower else 1, urljoin(ROSSTAT_TRANSPORT_URL, href))
+            )
+    candidates = [url for _, url in sorted(ranked_candidates, key=lambda item: item[0])]
+    if not candidates:
+        raise RuntimeError("Росстат: ссылка на XLSX по автоперевозкам не найдена")
+    last_error: Exception | None = None
+    for url in candidates[:5]:
+        try:
+            return parse_rosstat_road_workbook(get(url, attempts=1).content)
+        except Exception as exc:  # noqa: BLE001 - try alternate current/historical workbook
+            last_error = exc
+    raise RuntimeError(f"Росстат: файл автоперевозок не обработан: {last_error}")
+
+
+def fetch_ati_ftl() -> tuple[list[str], list[float | int]]:
+    """Load ATI.SU's general FTL index using only the server-side GitHub secret."""
+    token = os.environ.get("ATI_API_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("ATI_API_TOKEN не настроен в GitHub Secrets")
+    response = post_json(
+        ATI_HISTORY_URL,
+        payload={
+            "CarType": "all",
+            "DateFrom": START_DATE.isoformat(),
+            "DateTo": date.today().isoformat(),
+        },
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+    obj = response.json()
+    records = obj.get("Data") or obj.get("data") or []
+    rows: list[tuple[date, float]] = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        row_date = parse_date(record.get("Date") or record.get("date"))
+        value = to_number(record.get("Index") if "Index" in record else record.get("index"))
+        if row_date and value is not None:
+            rows.append((row_date, value))
+    dates, values = pack_series(rows)
+    validate_numeric_series(dates, values, "ATI.SU — общий индекс FTL")
+    return dates, values
 
 
 def fetch_moex(secid: str) -> tuple[list[str], list[float | int]]:
@@ -688,10 +1011,126 @@ def merge_hormuz_series(
     }
 
 
+SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
+    "production_index": {
+        "title": "Индекс промышленного производства",
+        "subtitle": "к тому же месяцу прошлого года",
+        "chart_label": "Промышленное производство, % г/г",
+        "unit": "%",
+        "source": "Росстат",
+        "source_url": ROSSTAT_INDUSTRIAL_URL,
+        "value_decimals": 1,
+        "change_decimals": 1,
+        "change_type": "pp",
+        "change_labels": ["к пред. точке", "3 мес.", "г/г"],
+        "change_days": ["previous", 93, 365],
+        "frequency": "monthly",
+        "page": "production",
+        "dates": [
+            "2025-02-28", "2025-03-31", "2025-05-31", "2025-09-30",
+            "2025-11-30", "2025-12-31", "2026-01-31", "2026-02-28",
+            "2026-04-30", "2026-05-31",
+        ],
+        "values": [100.2, 100.8, 101.8, 100.3, 99.3, 103.7, 99.2, 99.1, 101.9, 99.3],
+    },
+    "exports": {
+        "title": "Экспорт товаров",
+        "subtitle": "методология платежного баланса, квартал",
+        "chart_label": "Экспорт товаров, млрд $",
+        "unit": "млрд $",
+        "source": "ЦБ РФ",
+        "source_url": CBR_TRADE_URL,
+        "value_decimals": 1,
+        "change_decimals": 1,
+        "change_type": "raw",
+        "change_labels": ["кв/кв", "г/г", "3 года"],
+        "change_days": ["previous", 365, 1095],
+        "frequency": "quarterly",
+        "page": "foreign_trade",
+        "dates": [],
+        "values": [],
+    },
+    "imports": {
+        "title": "Импорт товаров",
+        "subtitle": "методология платежного баланса, квартал",
+        "chart_label": "Импорт товаров, млрд $",
+        "unit": "млрд $",
+        "source": "ЦБ РФ",
+        "source_url": CBR_TRADE_URL,
+        "value_decimals": 1,
+        "change_decimals": 1,
+        "change_type": "raw",
+        "change_labels": ["кв/кв", "г/г", "3 года"],
+        "change_days": ["previous", 365, 1095],
+        "frequency": "quarterly",
+        "page": "foreign_trade",
+        "dates": [],
+        "values": [],
+    },
+    "road_freight": {
+        "title": "Грузы автотранспортом",
+        "subtitle": "объём перевозок",
+        "chart_label": "Перевезено грузов автотранспортом, млн т",
+        "unit": "млн т",
+        "source": "Росстат",
+        "source_url": ROSSTAT_TRANSPORT_URL,
+        "value_decimals": 1,
+        "change_decimals": 1,
+        "change_type": "raw",
+        "change_labels": ["к пред. периоду", "3 года", "5 лет"],
+        "change_days": ["previous", 1095, 1825],
+        "frequency": "annual",
+        "page": "road_freight",
+        "empty_message": "Ряд появится после первого успешного обновления файла Росстата.",
+        "dates": [],
+        "values": [],
+    },
+    "ati_ftl": {
+        "title": "Индекс ставок ATI.SU FTL",
+        "subtitle": "Россия, полная загрузка 20 т / 82 м³",
+        "chart_label": "Общий индекс ATI.SU FTL, пунктов",
+        "unit": "пунктов",
+        "source": "ATI.SU",
+        "source_url": "https://help.ati.su/price-index",
+        "value_decimals": 1,
+        "change_decimals": 1,
+        "change_type": "raw",
+        "change_labels": ["к пред. дню", "м/м", "г/г"],
+        "change_days": ["previous", 31, 365],
+        "frequency": "daily",
+        "page": "ati_ftl",
+        "empty_message": "Добавьте GitHub Secret ATI_API_TOKEN и запустите workflow обновления.",
+        "dates": [],
+        "values": [],
+    },
+}
+
+
+def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
+    payload.setdefault("series", {})
+    payload.setdefault("status", {})
+    for key, default in SERIES_DEFAULTS.items():
+        if key not in payload["series"]:
+            payload["series"][key] = json.loads(json.dumps(default, ensure_ascii=False))
+        else:
+            for field, value in default.items():
+                payload["series"][key].setdefault(field, value)
+        payload["status"].setdefault(
+            key,
+            {
+                "state": "pending",
+                "updated_at": None,
+                "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
+            },
+        )
+    payload["schema_version"] = max(int(payload.get("schema_version", 1)), 3)
+    return payload
+
+
 def load_base_payload() -> dict[str, Any]:
     for path in (DATA_PATH, SNAPSHOT_PATH):
         if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
+            return ensure_series_defaults(json.loads(path.read_text(encoding="utf-8")))
     raise FileNotFoundError("Не найдены data/current.json и data/snapshot.json")
 
 
@@ -715,7 +1154,7 @@ def status_ok(result: dict[str, Any], message: str) -> dict[str, Any]:
 
 
 def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    updated = json.loads(json.dumps(base_payload, ensure_ascii=False))
+    updated = ensure_series_defaults(json.loads(json.dumps(base_payload, ensure_ascii=False)))
     updated.setdefault("status", {})
     updated.setdefault("series", {})
 
@@ -729,6 +1168,9 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         "rubeur": fetch_rubeur,
         "rubcny": fetch_rubcny,
         "cpi": fetch_bizon,
+        "production_index": fetch_rosstat_production,
+        "road_freight": fetch_rosstat_road_freight,
+        "ati_ftl": fetch_ati_ftl,
         "wheat": lambda: fetch_moex("WHFOB"),
         "oil": lambda: fetch_moex("SOEXP"),
     }
@@ -756,6 +1198,34 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
                 "message": message,
             }
             log(f"[refresh] {key}: ERROR: {message}")
+
+    log("[refresh] CBR foreign trade: loading quarterly workbook…")
+    try:
+        trade_results = fetch_cbr_trade()
+        for key in ("exports", "imports"):
+            dates, values = trade_results[key]
+            result = merge_numeric_series(updated["series"][key], dates, values)
+            updated["series"][key]["dates"] = result["dates"]
+            updated["series"][key]["values"] = result["values"]
+            updated["status"][key] = status_ok(
+                result, "Обновлено из квартальной книги платежного баланса ЦБ РФ"
+            )
+            successes += 1
+            actual_changes += int(result["changed_points"])
+            log(
+                f"[refresh] {key}: OK; fetched_latest={result['fetched_latest']}; "
+                f"new={result['new_points']}; changed={result['changed_points']}"
+            )
+    except Exception as exc:  # noqa: BLE001
+        message = str(exc)[:1000]
+        for key in ("exports", "imports"):
+            failures[key] = message
+            updated["status"][key] = {
+                "state": "error",
+                "updated_at": now_iso(),
+                "message": message,
+            }
+        log(f"[refresh] CBR foreign trade: ERROR: {message}")
 
     log("[refresh] ProFinance: loading rendered tables…")
     profinance_results, profinance_errors = fetch_all_profinance()
@@ -819,7 +1289,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         }
         log(f"[refresh] hormuz: ERROR: {message}")
 
-    total = len(request_jobs) + len(PROFINANCE) + 1
+    total = len(request_jobs) + 2 + len(PROFINANCE) + 1
     latest_dates = [
         series["dates"][-1]
         for series in updated.get("series", {}).values()
@@ -842,14 +1312,25 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
 
 
 def validate_required_currency_series(payload: dict[str, Any]) -> None:
-    """Ensure the three CBR currency series exist before publishing."""
-    for key in ("rubusd", "rubeur", "rubcny"):
+    """Ensure essential public series exist before publishing."""
+    required = (
+        "rubusd", "rubeur", "rubcny", "production_index", "exports", "imports"
+    )
+    for key in required:
         series = payload.get("series", {}).get(key, {})
         dates = series.get("dates") or []
         values = series.get("values") or []
         if not dates or len(dates) != len(values):
             raise RuntimeError(
-                f"Валютный ряд {key} не загружен или повреждён: "
+                f"Обязательный ряд {key} не загружен или повреждён: "
+                f"{len(dates)} дат / {len(values)} значений"
+            )
+    if os.environ.get("ATI_API_TOKEN", "").strip():
+        ati = payload.get("series", {}).get("ati_ftl", {})
+        dates, values = ati.get("dates") or [], ati.get("values") or []
+        if not dates or len(dates) != len(values):
+            raise RuntimeError(
+                "ATI_API_TOKEN задан, но ряд ati_ftl не загружен: "
                 f"{len(dates)} дат / {len(values)} значений"
             )
 

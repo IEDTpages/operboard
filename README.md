@@ -1,33 +1,34 @@
-# Оперборд — GitHub Pages v5
+"""Synchronize index.html's offline fallback with data/snapshot.json."""
 
-Статическая HTML-версия отчёта с интерактивными графиками и автоматическим обновлением данных через GitHub Actions.
+from __future__ import annotations
 
-## Изменения версии v5
+import json
+import re
+from pathlib import Path
 
-- добавлены официальные курсы ЦБ РФ для EUR/RUB и CNY/RUB;
-- курс CNY пересчитывается в рубли за 1 юань с учётом поля `Nominal` в XML ЦБ РФ;
-- на главной странице размещены отдельные карточки USD, EUR и CNY;
-- раздел `Курс` переименован в `Курсы валют`;
-- на общей валютной странице отображаются три ряда: USD и EUR по левой шкале, CNY по правой;
-- CSV-экспорт валютной страницы содержит все три курса;
-- главная сетка перестроена под 13 показателей и адаптирована для планшетов и телефонов;
-- workflow проверяет необходимость обновления на 13-й, 33-й и 53-й минуте каждого часа и запускает полный сбор, когда данным не менее 50 минут.
 
-## Архитектура
+ROOT = Path(__file__).resolve().parents[1]
+INDEX_PATH = ROOT / "index.html"
+SNAPSHOT_PATH = ROOT / "data" / "snapshot.json"
 
-1. `.github/workflows/pages.yml` проверяет свежесть опубликованных данных.
-2. `refresh_data.py` получает данные с веб-источников. Для ProFinance используется Chromium через Playwright.
-3. Курсы USD, EUR и CNY загружаются из официального XML-сервиса ЦБ РФ.
-4. Свежие данные сохраняются в `data/current.json` и публикуются в GitHub Pages.
-5. `index.html` загружает `data/current.json` без браузерного кэширования.
 
-## Основные файлы
+def main() -> None:
+    payload = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    compact = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    html = INDEX_PATH.read_text(encoding="utf-8")
+    replacement = f"const EMBEDDED_DATA={compact};\nconst LOGO_DATA="
+    updated, count = re.subn(
+        r"const EMBEDDED_DATA=.*?;\nconst LOGO_DATA=",
+        replacement,
+        html,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if count != 1:
+        raise RuntimeError("EMBEDDED_DATA block was not found exactly once")
+    INDEX_PATH.write_text(updated, encoding="utf-8")
+    print(f"Embedded {len(payload.get('series', {}))} series into {INDEX_PATH.name}")
 
-- `index.html` — статический интерактивный дашборд;
-- `refresh_data.py` — загрузка, проверка и слияние данных;
-- `requirements.txt` — Python-зависимости;
-- `.github/workflows/pages.yml` — расписание, Chromium, обновление и публикация;
-- `data/current.json` — последний опубликованный набор данных;
-- `data/snapshot.json` — резервный встроенный набор данных.
 
-Инструкция по замене файлов находится в `GITHUB_PAGES_SETUP.md`.
+if __name__ == "__main__":
+    main()
