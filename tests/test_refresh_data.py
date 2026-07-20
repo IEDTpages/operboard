@@ -109,6 +109,37 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(parsed["modes"]["yoy"]["dates"], ["2025-05-31"])
         self.assertEqual(set(parsed["modes"]["mom"]["series"]), set(lines))
 
+    def test_forecast_economy_levels_build_three_production_modes(self) -> None:
+        payload = {
+            "indicator": "ipi",
+            "count": 24,
+            "data": [
+                {"date": f"{year}-{month:02d}-01", "value": value}
+                for year, base in ((2024, 100), (2025, 110))
+                for month, value in (
+                    (month, base + month) for month in range(1, 13)
+                )
+            ],
+        }
+        total = refresh_data.parse_forecast_economy_level_series(payload, "ipi")
+        levels = {
+            "total": total,
+            "mining": {period: value * 0.9 for period, value in total.items()},
+            "manufacturing": {period: value * 1.1 for period, value in total.items()},
+        }
+        result = refresh_data.build_production_modes_from_levels(
+            levels,
+            start_date=refresh_data.date(2025, 1, 1),
+        )
+        self.assertEqual(result["default_mode"], "mom")
+        self.assertEqual(result["modes"]["mom"]["dates"][0], "2025-01-31")
+        self.assertEqual(result["modes"]["yoy"]["dates"][-1], "2025-12-31")
+        self.assertEqual(result["modes"]["ytd_yoy"]["series"]["total"][0], 109.901)
+        self.assertEqual(
+            set(result["modes"]["mom"]["series"]),
+            {"total", "mining", "manufacturing"},
+        )
+
     def test_parse_fedstat_road_converts_thousand_tonnes(self) -> None:
         dates, values = refresh_data.parse_fedstat_road_records(
             [
@@ -190,14 +221,17 @@ class RefreshDataTests(unittest.TestCase):
         post_r.assert_called_once()
         post_http.assert_not_called()
 
-    def test_fedstat_is_not_required_for_other_updates(self) -> None:
+    def test_road_fedstat_is_not_required_for_other_updates(self) -> None:
         payload = {
             "series": {
                 key: {"dates": ["2026-01-31"], "values": [1]}
                 for key in ("rubusd", "rubeur", "rubcny", "exports", "imports")
             }
         }
-        payload["series"]["production_index"] = {"dates": [], "values": []}
+        payload["series"]["production_index"] = {
+            "dates": ["2026-01-31"],
+            "values": [100.1],
+        }
         payload["series"]["road_freight"] = {"dates": [], "values": []}
         with patch.dict(os.environ, {}, clear=True):
             refresh_data.validate_required_currency_series(payload)
@@ -233,18 +267,101 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(str(point[0]), "2026-05-31")
         self.assertEqual(point[1], 99.3)
 
+    def test_parse_rosstat_production_workbook(self) -> None:
+        frame = pd.DataFrame([[None] * 6 for _ in range(13)])
+        frame.iat[0, 0] = "Индекс производства (процент)"
+        frame.iat[2, 3] = 2025
+        frame.iloc[3, 3:6] = ["январь", "февраль", "март"]
+        activities = {
+            "total": "Промышленное производство — всего",
+            "mining": "Добыча полезных ископаемых",
+            "manufacturing": "Обрабатывающие производства",
+        }
+        modes = {
+            "mom": "Отчетный месяц к предыдущему месяцу",
+            "yoy": "Отчетный месяц к соответствующему месяцу предыдущего года",
+            "ytd_yoy": "Период с начала года к соответствующему периоду предыдущего года",
+        }
+        row_index = 4
+        for line_index, activity in enumerate(activities.values()):
+            for mode_index, mode in enumerate(modes.values()):
+                frame.iat[row_index, 0] = "Российская Федерация"
+                frame.iat[row_index, 1] = activity
+                frame.iat[row_index, 2] = mode
+                frame.iloc[row_index, 3:6] = [
+                    95 + line_index + mode_index,
+                    96 + line_index + mode_index,
+                    97 + line_index + mode_index,
+                ]
+                row_index += 1
+        output = io.BytesIO()
+        frame.to_excel(output, index=False, header=False)
+        parsed = refresh_data.parse_rosstat_production_workbook(output.getvalue())
+        self.assertEqual(parsed["modes"]["mom"]["dates"], [
+            "2025-01-31", "2025-02-28", "2025-03-31"
+        ])
+        self.assertEqual(parsed["modes"]["yoy"]["series"]["mining"], [97, 98, 99])
+
     def test_parse_road_freight_wide_workbook(self) -> None:
         output = io.BytesIO()
         pd.DataFrame(
             [
-                ["Перевезено грузов автомобильным транспортом, млн т", None, None, None],
-                ["Показатель", 2021, 2022, 2023],
-                ["Автомобильный транспорт, грузы", 6000.1, 6100.2, 6200.3],
+                ["Перевозки грузов по видам транспорта, млн т", None, None, None, None],
+                [None, 2025, None, None, None],
+                [None, "январь", "февраль", "март", "апрель"],
+                ["Автомобильный транспорт", 500.1, 510.2, 520.3, 530.4],
             ]
         ).to_excel(output, index=False, header=False)
         dates, values = refresh_data.parse_rosstat_road_workbook(output.getvalue())
-        self.assertEqual(dates, ["2021-12-31", "2022-12-31", "2023-12-31"])
-        self.assertEqual(values, [6000.1, 6100.2, 6200.3])
+        self.assertEqual(
+            dates,
+            ["2025-01-31", "2025-02-28", "2025-03-31", "2025-04-30"],
+        )
+        self.assertEqual(values, [500.1, 510.2, 520.3, 530.4])
+
+    def test_rosstat_discovery_prefers_current_production_base(self) -> None:
+        html = f"""
+        <section>Данные по ОКВЭД2 (базисный 2018 год)
+          <a href='/storage/mediabank/ind-baza_2018.xlsx'>XLSX</a>
+          <span>{refresh_data.ROSSTAT_PRODUCTION_TITLE}</span>
+        </section>
+        <section>Данные по ОКВЭД2 (базисный 2023 год)
+          <a href='/storage/mediabank/ind-baza_2023.xlsx'>XLSX</a>
+          <span>{refresh_data.ROSSTAT_PRODUCTION_TITLE}</span>
+        </section>
+        """
+        urls = refresh_data.discover_rosstat_xlsx_urls(
+            html,
+            refresh_data.ROSSTAT_INDUSTRIAL_URL,
+            refresh_data.ROSSTAT_PRODUCTION_TITLE,
+            preferred_context="базисный 2023 год",
+        )
+        self.assertTrue(urls[0].endswith("ind-baza_2023.xlsx"))
+
+    def test_road_override_survives_unavailable_rosstat_page(self) -> None:
+        expected = (["2026-05-31"], [555.5])
+        with patch.dict(
+            os.environ,
+            {"ROSSTAT_ROAD_XLSX_URL": "https://rosstat.gov.ru/storage/mediabank/road.xlsx"},
+            clear=True,
+        ):
+            with patch.object(
+                refresh_data,
+                "_rosstat_page_candidates",
+                side_effect=RuntimeError("temporary page outage"),
+            ):
+                with patch.object(
+                    refresh_data,
+                    "_download_official_workbook",
+                    return_value=b"workbook",
+                ):
+                    with patch.object(
+                        refresh_data,
+                        "parse_rosstat_road_workbook",
+                        return_value=expected,
+                    ):
+                        result = refresh_data.fetch_rosstat_road_freight()
+        self.assertEqual(result, expected)
 
     def test_ati_requires_server_side_secret(self) -> None:
         with patch.dict(os.environ, {}, clear=True):

@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 import requests
@@ -50,8 +50,25 @@ FEDSTAT_ROAD_URL = "https://www.fedstat.ru/indicator/31314"
 FEDSTAT_DATA_URL = "https://www.fedstat.ru/indicator/data.do?format=sdmx"
 FEDSTAT_CACHE_PATH = DATA_DIR / "fedstat_filters.json"
 FEDSTAT_R_SCRIPT = ROOT / "tools" / "fetch_fedstat.R"
+FORECAST_ECONOMY_PRODUCTION_URL = "https://forecasteconomy.com/indicator/ipi"
+FORECAST_ECONOMY_API_TEMPLATE = (
+    "https://forecasteconomy.com/api/v1/indicators/{slug}/data"
+)
+FORECAST_ECONOMY_PRODUCTION_SLUGS: dict[str, str] = {
+    "total": "ipi",
+    "mining": "ipi-mining",
+    "manufacturing": "ipi-manufacturing",
+}
 ROSSTAT_INDUSTRIAL_URL = "https://rosstat.gov.ru/enterprise_industrial"
 ROSSTAT_TRANSPORT_URL = "https://rosstat.gov.ru/statistics/transport"
+ROSSTAT_PRODUCTION_XLSX_FALLBACK = (
+    "https://rosstat.gov.ru/storage/mediabank/ind-baza_2023.xlsx"
+)
+ROSSTAT_PRODUCTION_TITLE = (
+    "Индексы производства по отдельным видам экономической деятельности "
+    "по Российской Федерации"
+)
+ROSSTAT_ROAD_TITLE = "Перевозки грузов по видам транспорта"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
 
 SESSION = requests.Session()
@@ -740,7 +757,10 @@ def _production_activity_from_text(value: Any) -> str | None:
         return "total"
     if text in {"всего", "итого", "промышленное производство", "промышленность"}:
         return "total"
-    if "промышленное производство" in text:
+    if "промышленное производство" in text or (
+        "собирательная классификационная группировка" in text
+        and "промышленность" in text
+    ):
         return "total"
     if has_mining:
         return "mining"
@@ -1152,6 +1172,157 @@ def fetch_fedstat_production() -> dict[str, Any]:
     return parse_fedstat_production_records(fetch_fedstat_records("57806", "production"))
 
 
+def parse_forecast_economy_level_series(
+    payload: Any, slug: str
+) -> dict[date, float]:
+    """Validate one Forecast Economy monthly level-index response."""
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Forecast Economy {slug}: JSON имеет неверный формат")
+    if str(payload.get("indicator") or "") != slug:
+        raise RuntimeError(
+            f"Forecast Economy {slug}: в ответе указан другой показатель"
+        )
+    records = payload.get("data")
+    if not isinstance(records, list):
+        raise RuntimeError(f"Forecast Economy {slug}: массив data отсутствует")
+
+    levels: dict[date, float] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        period = parse_date(record.get("date"))
+        value = to_number(record.get("value"))
+        if period is None or value is None:
+            continue
+        month = date(period.year, period.month, 1)
+        levels[month] = float(value)
+
+    expected_count = to_number(payload.get("count"))
+    if expected_count is not None and int(expected_count) != len(levels):
+        raise RuntimeError(
+            f"Forecast Economy {slug}: заявлено {int(expected_count)} точек, "
+            f"разобрано {len(levels)}"
+        )
+    if len(levels) < 13:
+        raise RuntimeError(
+            f"Forecast Economy {slug}: недостаточно месячных данных ({len(levels)})"
+        )
+    return levels
+
+
+def _production_index_ratio(current: float, previous: float) -> float | int:
+    if previous == 0:
+        raise RuntimeError("ИПП: невозможно рассчитать индекс при нулевой базе")
+    return normalise_number(round(current / previous * 100, 4))
+
+
+def build_production_modes_from_levels(
+    levels_by_line: dict[str, dict[date, float]],
+    *,
+    start_date: date = START_DATE,
+) -> dict[str, Any]:
+    """Build official-style indices (100 = no change) from base-level rows."""
+    missing_lines = set(PRODUCTION_LINES).difference(levels_by_line)
+    if missing_lines:
+        raise RuntimeError(
+            "Forecast Economy: отсутствуют ряды " + ", ".join(sorted(missing_lines))
+        )
+    common_months = sorted(
+        set.intersection(*(set(levels_by_line[line]) for line in PRODUCTION_LINES))
+    )
+    if not common_months:
+        raise RuntimeError("Forecast Economy: у рядов ИПП нет общих месяцев")
+
+    output: dict[str, dict[str, Any]] = {
+        mode: {
+            "label": label,
+            "dates": [],
+            "series": {line: [] for line in PRODUCTION_LINES},
+        }
+        for mode, label in PRODUCTION_MODES.items()
+    }
+
+    for period in common_months:
+        if period < date(start_date.year, start_date.month, 1):
+            continue
+        previous_month = (
+            date(period.year - 1, 12, 1)
+            if period.month == 1
+            else date(period.year, period.month - 1, 1)
+        )
+        previous_year = date(period.year - 1, period.month, 1)
+        month_end = date(
+            period.year,
+            period.month,
+            calendar.monthrange(period.year, period.month)[1],
+        ).isoformat()
+
+        calculations: dict[str, dict[str, float | int]] = {
+            mode: {} for mode in PRODUCTION_MODES
+        }
+        complete = {mode: True for mode in PRODUCTION_MODES}
+        for line in PRODUCTION_LINES:
+            levels = levels_by_line[line]
+            current = levels.get(period)
+            previous = levels.get(previous_month)
+            year_ago = levels.get(previous_year)
+            if current is None or previous is None:
+                complete["mom"] = False
+            else:
+                calculations["mom"][line] = _production_index_ratio(current, previous)
+            if current is None or year_ago is None:
+                complete["yoy"] = False
+            else:
+                calculations["yoy"][line] = _production_index_ratio(current, year_ago)
+
+            current_ytd = [
+                levels.get(date(period.year, month, 1))
+                for month in range(1, period.month + 1)
+            ]
+            previous_ytd = [
+                levels.get(date(period.year - 1, month, 1))
+                for month in range(1, period.month + 1)
+            ]
+            if any(value is None for value in current_ytd + previous_ytd):
+                complete["ytd_yoy"] = False
+            else:
+                calculations["ytd_yoy"][line] = _production_index_ratio(
+                    sum(float(value) for value in current_ytd if value is not None),
+                    sum(float(value) for value in previous_ytd if value is not None),
+                )
+
+        for mode in PRODUCTION_MODES:
+            if not complete[mode] or set(calculations[mode]) != set(PRODUCTION_LINES):
+                continue
+            output[mode]["dates"].append(month_end)
+            for line in PRODUCTION_LINES:
+                output[mode]["series"][line].append(calculations[mode][line])
+
+    for mode in PRODUCTION_MODES:
+        if not output[mode]["dates"]:
+            raise RuntimeError(f"Forecast Economy: не рассчитан режим {mode}")
+    return {
+        "default_mode": "mom",
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": output,
+    }
+
+
+def fetch_forecast_economy_production() -> dict[str, Any]:
+    """Load the three monthly IPI level rows and calculate dashboard modes."""
+    levels_by_line: dict[str, dict[date, float]] = {}
+    for line, slug in FORECAST_ECONOMY_PRODUCTION_SLUGS.items():
+        response = get(
+            FORECAST_ECONOMY_API_TEMPLATE.format(slug=slug),
+            headers={"Accept": "application/json"},
+        )
+        levels_by_line[line] = parse_forecast_economy_level_series(
+            response.json(), slug
+        )
+    return build_production_modes_from_levels(levels_by_line)
+
+
 def merge_production_series(existing: dict[str, Any], fetched: dict[str, Any]) -> dict[str, Any]:
     old_modes = existing.get("modes") or {}
     output_modes: dict[str, Any] = {}
@@ -1255,41 +1426,6 @@ def _extract_production_point(text: str) -> tuple[date, float] | None:
     return None
 
 
-def fetch_rosstat_production() -> tuple[list[str], list[float | int]]:
-    """Read the latest monthly industrial-production headline from Rosstat."""
-    response = get(ROSSTAT_INDUSTRIAL_URL)
-    soup = BeautifulSoup(response.text, "lxml")
-    candidates: list[str] = []
-    for anchor in soup.select("a[href]"):
-        container = anchor.parent.parent if anchor.parent and anchor.parent.parent else anchor
-        text = _normalise_header(container.get_text(" ", strip=True))
-        href = anchor.get("href", "")
-        if "промышлен" not in text or not href:
-            continue
-        url = urljoin(ROSSTAT_INDUSTRIAL_URL, href)
-        if url not in candidates and ("/document/" in url or url.endswith((".html", ".htm"))):
-            candidates.append(url)
-
-    pages = [(ROSSTAT_INDUSTRIAL_URL, response.text)]
-    for url in candidates[:10]:
-        try:
-            pages.append((url, get(url, attempts=1).text))
-        except Exception:  # noqa: BLE001 - try the next official release
-            continue
-
-    points: list[tuple[date, float]] = []
-    for _, html in pages:
-        text = BeautifulSoup(html, "lxml").get_text(" ", strip=True)
-        point = _extract_production_point(text)
-        if point:
-            points.append(point)
-    if not points:
-        raise RuntimeError("Росстат: актуальный месячный индекс производства не распознан")
-    dates, values = pack_series(points)
-    validate_numeric_series(dates, values, "Росстат — промышленное производство")
-    return dates, values
-
-
 def _parse_period_cell(value: Any) -> date | None:
     """Recognise a year, quarter, month or explicit date in a Rosstat workbook."""
     if (
@@ -1318,107 +1454,393 @@ def _parse_period_cell(value: Any) -> date | None:
     return parsed if parsed and parsed.year >= 1990 else None
 
 
-def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float | int]]:
-    """Extract the national road-freight time series from a Rosstat workbook.
+def _year_from_cell(value: Any) -> int | None:
+    text = _normalise_header(value)
+    match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*г\.?)?", text)
+    return int(match.group(1)) if match else None
 
-    Rosstat periodically changes the workbook layout, so the parser supports
-    both wide tables (periods in columns) and long two-column tables.
-    """
+
+def _month_from_cell(value: Any) -> int | None:
+    if not isinstance(value, str):
+        return None
+    text = _normalise_header(value)
+    if re.search(r"квартал|полугод|с начала года|январь\s*[-–]", text):
+        return None
+    return _month_number(text)
+
+
+def _wide_month_columns(frame: pd.DataFrame, header_index: int) -> dict[int, date]:
+    """Map wide-table columns to month ends, including merged year headers."""
+    if header_index < 0 or header_index >= len(frame):
+        return {}
+
+    years_by_column: dict[int, int] = {}
+    for year_row_index in range(max(0, header_index - 5), header_index + 1):
+        carried_year: int | None = None
+        row_years: dict[int, int] = {}
+        for column_index, value in enumerate(frame.iloc[year_row_index]):
+            explicit_year = _year_from_cell(value)
+            if explicit_year:
+                carried_year = explicit_year
+            if carried_year:
+                row_years[column_index] = carried_year
+        if len(set(row_years.values())) >= 1:
+            years_by_column.update(row_years)
+
+    sheet_years = {
+        int(item)
+        for item in re.findall(
+            r"(?<!\d)(20\d{2})(?!\d)",
+            " ".join(
+                _normalise_header(value)
+                for value in frame.iloc[: min(len(frame), 8)].to_numpy().ravel()
+            ),
+        )
+    }
+    single_sheet_year = next(iter(sheet_years)) if len(sheet_years) == 1 else None
+
+    output: dict[int, date] = {}
+    for column_index, value in enumerate(frame.iloc[header_index]):
+        text = _normalise_header(value)
+        explicit = re.search(r"([а-я]+)[\s./-]+(20\d{2})", text)
+        if explicit:
+            month = _month_number(explicit.group(1))
+            year = int(explicit.group(2))
+        else:
+            month = _month_from_cell(value)
+            year = years_by_column.get(column_index) or single_sheet_year
+        if month and year:
+            output[column_index] = date(
+                year, month, calendar.monthrange(year, month)[1]
+            )
+    return output
+
+
+def _unique_production_mode(values: list[Any]) -> str | None:
+    found = {
+        mode
+        for value in values
+        if (mode := _production_mode_from_text(value)) is not None
+    }
+    return next(iter(found)) if len(found) == 1 else None
+
+
+def _unique_production_line(values: list[Any]) -> str | None:
+    found = {
+        line
+        for value in values
+        if (line := _production_activity_from_text(value)) is not None
+    }
+    return next(iter(found)) if len(found) == 1 else None
+
+
+def _validate_production_modes(result: dict[str, Any], source: str) -> None:
+    for mode in PRODUCTION_MODES:
+        block = result.get("modes", {}).get(mode, {})
+        dates = block.get("dates") or []
+        lines = block.get("series") or {}
+        if len(dates) < 3:
+            raise RuntimeError(f"{source}: режим {mode} содержит менее трёх месяцев")
+        for line in PRODUCTION_LINES:
+            values = lines.get(line) or []
+            validate_numeric_series(dates, values, f"{source} — {mode}/{line}")
+            if any(not 40 <= float(value) <= 180 for value in values):
+                raise RuntimeError(
+                    f"{source}: неправдоподобное значение в ряду {mode}/{line}"
+                )
+
+
+def parse_rosstat_production_workbook(content: bytes) -> dict[str, Any]:
+    """Extract three activities and three comparison modes from Rosstat XLS/XLSX."""
     workbook = pd.ExcelFile(io.BytesIO(content))
-    best_rows: list[tuple[date, float]] = []
-    best_score = -1
+    grouped: dict[str, dict[str, list[tuple[date, float]]]] = {
+        mode: {line: [] for line in PRODUCTION_LINES} for mode in PRODUCTION_MODES
+    }
+
+    for sheet_name in workbook.sheet_names:
+        frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+        if frame.empty:
+            continue
+        top_values = [sheet_name, *frame.iloc[: min(len(frame), 18)].to_numpy().ravel()]
+        sheet_mode = _unique_production_mode(top_values)
+        sheet_line = _unique_production_line(top_values)
+
+        for header_index in range(min(len(frame), 35)):
+            period_columns = _wide_month_columns(frame, header_index)
+            if len(period_columns) < 3:
+                continue
+            header_context = [
+                *frame.iloc[max(0, header_index - 8) : header_index + 1]
+                .to_numpy()
+                .ravel(),
+                sheet_name,
+            ]
+            header_mode = _unique_production_mode(header_context) or sheet_mode
+            header_line = _unique_production_line(header_context) or sheet_line
+            active_mode = header_mode
+            active_line = header_line
+
+            for row_index in range(header_index + 1, len(frame)):
+                row = frame.iloc[row_index]
+                row_text_values = [value for value in row.iloc[: min(12, len(row))] if pd.notna(value)]
+                row_mode = _unique_production_mode(row_text_values)
+                row_line = _unique_production_line(row_text_values)
+                if row_mode:
+                    active_mode = row_mode
+                if row_line:
+                    active_line = row_line
+                mode = row_mode or active_mode
+                line = row_line or active_line
+                if mode not in PRODUCTION_MODES or line not in PRODUCTION_LINES:
+                    continue
+
+                points: list[tuple[date, float]] = []
+                for column_index, period in period_columns.items():
+                    number = to_number(row.iloc[column_index])
+                    if number is not None and 40 <= number <= 180:
+                        points.append((period, number))
+                if len(points) >= 3:
+                    grouped[mode][line].extend(points)
+
+    modes: dict[str, Any] = {}
+    missing: list[str] = []
+    for mode, label in PRODUCTION_MODES.items():
+        line_maps: dict[str, dict[str, float | int]] = {}
+        for line in PRODUCTION_LINES:
+            dates, values = pack_series(grouped[mode][line])
+            line_maps[line] = dict(zip(dates, values, strict=True))
+            if not dates:
+                missing.append(f"{mode}/{line}")
+        common_dates = (
+            sorted(set.intersection(*(set(items) for items in line_maps.values())))
+            if line_maps
+            else []
+        )
+        modes[mode] = {
+            "label": label,
+            "dates": common_dates,
+            "series": {
+                line: [line_maps[line][item] for item in common_dates]
+                for line in PRODUCTION_LINES
+            },
+        }
+    if missing:
+        raise RuntimeError(
+            "Росстат: в книге ИПП не распознаны ряды " + ", ".join(missing)
+        )
+    result = {
+        "default_mode": "mom",
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": modes,
+    }
+    _validate_production_modes(result, "Росстат — ИПП")
+    return result
+
+
+def _safe_rosstat_url(value: str, base_url: str) -> str | None:
+    url = urljoin(base_url, value.strip())
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        return None
+    hostname = parsed.hostname.lower()
+    if hostname != "rosstat.gov.ru" and not hostname.endswith(".rosstat.gov.ru"):
+        return None
+    return url
+
+
+def _anchor_context(anchor: Any) -> str:
+    parts: list[str] = []
+    node = anchor
+    for _ in range(6):
+        if node is None:
+            break
+        text = node.get_text(" ", strip=True) if hasattr(node, "get_text") else ""
+        if text and len(text) <= 5000:
+            parts.append(text)
+        node = getattr(node, "parent", None)
+    for sibling in list(anchor.next_siblings)[:8]:
+        if hasattr(sibling, "get_text"):
+            parts.append(sibling.get_text(" ", strip=True))
+        else:
+            parts.append(str(sibling))
+    return _normalise_header(" ".join(parts))
+
+
+def discover_rosstat_xlsx_urls(
+    html: str,
+    page_url: str,
+    target_title: str,
+    *,
+    preferred_context: str = "",
+) -> list[str]:
+    """Find official workbook links by semantic title, not a volatile filename."""
+    soup = BeautifulSoup(html, "lxml")
+    target = _normalise_header(target_title)
+    preferred = _normalise_header(preferred_context)
+    ranked: list[tuple[int, str]] = []
+    seen: set[str] = set()
+    for anchor in soup.select("a[href]"):
+        href = str(anchor.get("href") or "")
+        if ".xlsx" not in href.lower() and ".xls" not in href.lower():
+            continue
+        url = _safe_rosstat_url(href, page_url)
+        if not url or url in seen:
+            continue
+        context = _anchor_context(anchor)
+        if target not in context:
+            continue
+        score = 100
+        if preferred and preferred in context:
+            score += 80
+        filename = urlparse(url).path.lower()
+        if "2023" in filename and "базисный 2023" in preferred:
+            score += 60
+        if target == _normalise_header(ROSSTAT_ROAD_TITLE) and "perev" in filename:
+            score += 10
+        ranked.append((score, url))
+        seen.add(url)
+    return [url for _, url in sorted(ranked, key=lambda item: item[0], reverse=True)]
+
+
+def _rosstat_page_candidates(page_url: str) -> list[tuple[str, str]]:
+    pages: list[tuple[str, str]] = []
+    errors: list[str] = []
+    for url in (page_url, f"{page_url}?print=1"):
+        try:
+            pages.append((url, get(url, attempts=2).text))
+        except Exception as exc:  # noqa: BLE001 - try printable official page
+            errors.append(f"{url}: {exc}")
+    if not pages:
+        raise RuntimeError("Росстат: страница источника недоступна; " + "; ".join(errors))
+    return pages
+
+
+def _download_official_workbook(url: str) -> bytes:
+    safe_url = _safe_rosstat_url(url, url)
+    if not safe_url:
+        raise RuntimeError("Росстат: отклонена ссылка за пределами rosstat.gov.ru")
+    response = get(safe_url, attempts=2)
+    content = response.content
+    if len(content) > 15 * 1024 * 1024:
+        raise RuntimeError("Росстат: XLSX превышает допустимый размер 15 МБ")
+    if not (content.startswith(b"PK") or content.startswith(bytes.fromhex("D0CF11E0"))):
+        raise RuntimeError("Росстат: вместо книги получен другой формат")
+    return content
+
+
+def fetch_rosstat_production_history() -> dict[str, Any]:
+    override = os.environ.get("ROSSTAT_PRODUCTION_XLSX_URL", "").strip()
+    candidates: list[str] = [override] if override else []
+    page_error: Exception | None = None
+    try:
+        for page_url, html in _rosstat_page_candidates(ROSSTAT_INDUSTRIAL_URL):
+            candidates.extend(
+                discover_rosstat_xlsx_urls(
+                    html,
+                    page_url,
+                    ROSSTAT_PRODUCTION_TITLE,
+                    preferred_context="базисный 2023 год",
+                )
+            )
+    except Exception as exc:  # noqa: BLE001 - direct official fallback remains
+        page_error = exc
+    candidates.append(ROSSTAT_PRODUCTION_XLSX_FALLBACK)
+
+    last_error: Exception | None = page_error
+    for url in dict.fromkeys(item for item in candidates if item):
+        try:
+            return parse_rosstat_production_workbook(_download_official_workbook(url))
+        except Exception as exc:  # noqa: BLE001 - try another official workbook
+            last_error = exc
+    raise RuntimeError(f"Росстат: книга ИПП не обработана: {last_error}")
+
+
+def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float | int]]:
+    """Extract the monthly national road-freight series from Rosstat XLS/XLSX."""
+    workbook = pd.ExcelFile(io.BytesIO(content))
+    row_candidates: list[tuple[int, list[tuple[date, float]]]] = []
 
     for sheet_name in workbook.sheet_names:
         frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
         text_blob = " ".join(_normalise_header(value) for value in frame.to_numpy().ravel())
-        sheet_bonus = 20 if "автомоб" in text_blob and "груз" in text_blob else 0
+        sheet_bonus = 30 if "автомоб" in text_blob and "груз" in text_blob else 0
 
-        # Wide table: one row contains periods and a nearby row contains values.
-        for header_index in range(len(frame)):
-            periods = [
-                (column_index, _parse_period_cell(value))
-                for column_index, value in enumerate(frame.iloc[header_index])
-            ]
-            periods = [(column, period) for column, period in periods if period]
+        for header_index in range(min(len(frame), 40)):
+            periods = _wide_month_columns(frame, header_index)
             if len(periods) < 3:
                 continue
-            for value_index in range(max(0, header_index - 8), min(len(frame), header_index + 9)):
-                if value_index == header_index:
+            for value_index in range(header_index + 1, len(frame)):
+                row = frame.iloc[value_index]
+                context = " ".join(
+                    _normalise_header(value)
+                    for value in row.iloc[: min(10, len(row))]
+                    if pd.notna(value)
+                )
+                if (
+                    "автомоб" not in context
+                    or "грузооборот" in context
+                    or "пассаж" in context
+                    or "коммерческой основе" in context
+                ):
                     continue
                 rows: list[tuple[date, float]] = []
-                for column_index, period in periods:
-                    number = to_number(frame.iat[value_index, column_index])
+                for column_index, period in periods.items():
+                    number = to_number(row.iloc[column_index])
                     if number is not None:
                         rows.append((period, number))
                 if len(rows) < 3:
                     continue
-                context = " ".join(
-                    _normalise_header(value)
-                    for value in frame.iloc[value_index, : min(5, frame.shape[1])]
-                )
-                score = len(rows) + sheet_bonus
-                if "автомоб" in context:
+                score = len(rows) + sheet_bonus + 100
+                if "российская федерация" in context:
                     score += 30
-                if "груз" in context:
-                    score += 15
-                if score > best_score:
-                    best_rows, best_score = rows, score
+                if "без учета новых субъектов" in context:
+                    score += 10
+                row_candidates.append((score, rows))
 
-        # Long table: each row has a period and a numeric value.
-        long_rows: list[tuple[date, float]] = []
-        for row_index in range(len(frame)):
-            period: date | None = None
-            period_column: int | None = None
-            for column_index, value in enumerate(frame.iloc[row_index]):
-                period = _parse_period_cell(value)
-                if period:
-                    period_column = column_index
-                    break
-            if period is None:
-                continue
-            numbers = [
-                to_number(value)
-                for column_index, value in enumerate(frame.iloc[row_index])
-                if column_index != period_column
-            ]
-            number = next((value for value in numbers if value is not None), None)
-            if number is not None:
-                long_rows.append((period, number))
-        if len(long_rows) >= 3 and len(long_rows) + sheet_bonus > best_score:
-            best_rows, best_score = long_rows, len(long_rows) + sheet_bonus
-
+    merged_rows: dict[date, float] = {}
+    for _, rows in sorted(row_candidates, key=lambda item: item[0]):
+        for period, value in rows:
+            merged_rows[period] = value
+    best_rows = list(merged_rows.items())
     best_rows = [(period, value) for period, value in best_rows if period >= START_DATE]
     if not best_rows:
-        raise RuntimeError("Росстат: ряд автоперевозок в XLSX не распознан")
+        raise RuntimeError("Росстат: месячный ряд автоперевозок в книге не распознан")
     median = sorted(abs(value) for _, value in best_rows)[len(best_rows) // 2]
     if median > 100_000:  # some releases use thousand tonnes; dashboard uses million tonnes
         best_rows = [(period, value / 1000.0) for period, value in best_rows]
     dates, values = pack_series(best_rows)
     validate_numeric_series(dates, values, "Росстат — автоперевозки")
+    if any(not 0 < float(value) < 5000 for value in values):
+        raise RuntimeError("Росстат: неправдоподобное значение автоперевозок")
     return dates, values
 
 
 def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
-    response = get(ROSSTAT_TRANSPORT_URL)
-    soup = BeautifulSoup(response.text, "lxml")
-    ranked_candidates: list[tuple[int, str]] = []
-    for anchor in soup.select("a[href]"):
-        container = anchor.parent.parent if anchor.parent and anchor.parent.parent else anchor
-        text = _normalise_header(container.get_text(" ", strip=True))
-        href = anchor.get("href", "")
-        href_lower = href.lower()
-        relevant_text = "автомоб" in text and "груз" in text
-        if href_lower.endswith(".xlsx") and ("perevgruz" in href_lower or relevant_text):
-            ranked_candidates.append(
-                (0 if "perevgruz" in href_lower else 1, urljoin(ROSSTAT_TRANSPORT_URL, href))
+    override = os.environ.get("ROSSTAT_ROAD_XLSX_URL", "").strip()
+    candidates: list[str] = [override] if override else []
+    page_error: Exception | None = None
+    try:
+        for page_url, html in _rosstat_page_candidates(ROSSTAT_TRANSPORT_URL):
+            candidates.extend(
+                discover_rosstat_xlsx_urls(
+                    html,
+                    page_url,
+                    ROSSTAT_ROAD_TITLE,
+                )
             )
-    candidates = [url for _, url in sorted(ranked_candidates, key=lambda item: item[0])]
+    except Exception as exc:  # noqa: BLE001 - an explicit official URL may remain
+        page_error = exc
+    candidates = list(dict.fromkeys(item for item in candidates if item))
     if not candidates:
-        raise RuntimeError("Росстат: ссылка на XLSX по автоперевозкам не найдена")
-    last_error: Exception | None = None
-    for url in candidates[:5]:
+        raise RuntimeError(
+            "Росстат: ссылка «Перевозки грузов по видам транспорта» не найдена; "
+            f"{page_error}"
+        )
+    last_error: Exception | None = page_error
+    for url in candidates[:8]:
         try:
-            return parse_rosstat_road_workbook(get(url, attempts=1).content)
+            return parse_rosstat_road_workbook(_download_official_workbook(url))
         except Exception as exc:  # noqa: BLE001 - try alternate current/historical workbook
             last_error = exc
     raise RuntimeError(f"Росстат: файл автоперевозок не обработан: {last_error}")
@@ -1855,8 +2277,13 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         "subtitle": "отчётный месяц к предыдущему",
         "chart_label": "Совокупный индекс производства, %",
         "unit": "%",
-        "source": "ЕМИСС / Росстат",
-        "source_url": FEDSTAT_PRODUCTION_URL,
+        "source": "Росстат",
+        "source_url": ROSSTAT_INDUSTRIAL_URL,
+        "history_source": "ЕМИСС, выгрузка за 2023–2025 годы",
+        "methodology_note": (
+            "Ретроспектива 2023–2025 гг. сформирована из выгрузки ЕМИСС. "
+            "Новые периоды и официальные уточнения загружаются из таблиц Росстата."
+        ),
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "pp",
@@ -1877,7 +2304,7 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
         },
         "dates": [],
         "values": [],
-        "empty_message": "Ряд появится после первого успешного обновления ЕМИСС 57806.",
+        "empty_message": "Ряд появится после первого успешного обновления Росстата.",
     },
     "exports": {
         "title": "Экспорт товаров",
@@ -1915,19 +2342,26 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "road_freight": {
         "title": "Грузы автотранспортом",
-        "subtitle": "объём перевозок",
+        "subtitle": "объём перевозок, месяц",
         "chart_label": "Перевезено грузов автотранспортом, млн т",
         "unit": "млн т",
-        "source": "ЕМИСС / Росстат",
-        "source_url": FEDSTAT_ROAD_URL,
+        "source": "Росстат",
+        "source_url": ROSSTAT_TRANSPORT_URL,
+        "history_source": "ЕМИСС, выгрузка за 2021–2025 годы",
+        "methodology_note": (
+            "Ретроспектива 2021–2025 гг. сформирована из выгрузки ЕМИСС. "
+            "С 2023 года данные приведены по Российской Федерации без учета "
+            "ДНР, ЛНР, Запорожской и Херсонской областей. Новые месяцы "
+            "загружаются из таблицы Росстата «Перевозки грузов по видам транспорта»."
+        ),
         "value_decimals": 1,
         "change_decimals": 1,
         "change_type": "raw",
-        "change_labels": ["к пред. периоду", "3 года", "5 лет"],
-        "change_days": ["previous", 1095, 1825],
-        "frequency": "annual",
+        "change_labels": ["м/м", "г/г", "3 года"],
+        "change_days": ["previous", 365, 1095],
+        "frequency": "monthly",
         "page": "road_freight",
-        "empty_message": "Ряд появится после первого успешного обновления ЕМИСС 31314.",
+        "empty_message": "Ряд появится после первого успешного обновления Росстата.",
         "dates": [],
         "values": [],
     },
@@ -1969,7 +2403,25 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    payload["schema_version"] = max(int(payload.get("schema_version", 1)), 3)
+    # v7.4 moved both indicators to the public Rosstat workbooks. Source and
+    # methodology metadata are intentionally refreshed in older payloads.
+    for key in ("production_index", "road_freight"):
+        series = payload["series"][key]
+        for field in (
+            "source",
+            "source_url",
+            "history_source",
+            "methodology_note",
+            "empty_message",
+            "subtitle",
+            "change_labels",
+            "change_days",
+            "frequency",
+        ):
+            series[field] = json.loads(
+                json.dumps(SERIES_DEFAULTS[key][field], ensure_ascii=False)
+            )
+    payload["schema_version"] = max(int(payload.get("schema_version", 1)), 6)
     return payload
 
 
@@ -2028,12 +2480,31 @@ def status_source_error(
     return status
 
 
+def rosstat_refresh_due(status: dict[str, Any] | None, minimum_hours: int = 20) -> bool:
+    """Limit low-frequency Rosstat workbook checks while allowing manual refreshes."""
+    if os.environ.get("FORCE_ROSSTAT_REFRESH", "").strip() == "1":
+        return True
+    status = status if isinstance(status, dict) else {}
+    stamp = str(status.get("updated_at") or "").strip()
+    if not stamp:
+        return True
+    try:
+        checked = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        if checked.tzinfo is None:
+            checked = checked.replace(tzinfo=timezone.utc)
+        age = datetime.now(timezone.utc) - checked.astimezone(timezone.utc)
+        return age.total_seconds() >= minimum_hours * 3600
+    except ValueError:
+        return True
+
+
 def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     updated = ensure_series_defaults(json.loads(json.dumps(base_payload, ensure_ascii=False)))
     updated.setdefault("status", {})
     updated.setdefault("series", {})
 
     successes = 0
+    skipped = 0
     failures: dict[str, str] = {}
     actual_changes = 0
 
@@ -2043,7 +2514,6 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         "rubeur": fetch_rubeur,
         "rubcny": fetch_rubcny,
         "cpi": fetch_bizon,
-        "road_freight": fetch_fedstat_road_freight,
         "ati_ftl": fetch_ati_ftl,
         "wheat": lambda: fetch_moex("WHFOB"),
         "oil": lambda: fetch_moex("SOEXP"),
@@ -2066,44 +2536,72 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         except Exception as exc:  # noqa: BLE001
             message = str(exc)[:1000]
             failures[key] = message
-            if key == "road_freight":
-                updated["status"][key] = status_source_error(
-                    updated["status"].get(key), updated["series"][key], message
-                )
-            else:
-                updated["status"][key] = {
-                    "state": "error",
-                    "updated_at": now_iso(),
-                    "message": message,
-                }
+            updated["status"][key] = {
+                "state": "error",
+                "updated_at": now_iso(),
+                "message": message,
+            }
             log(f"[refresh] {key}: ERROR: {message}")
 
-    log("[refresh] production_index: loading Fedstat 57806…")
-    try:
-        fetched = fetch_fedstat_production()
-        result = merge_production_series(updated["series"]["production_index"], fetched)
-        for field in (
-            "default_mode", "mode_labels", "series_labels", "modes", "dates", "values"
-        ):
-            updated["series"]["production_index"][field] = result[field]
-        updated["status"]["production_index"] = status_ok(
-            result, "Обновлено из ЕМИСС, показатель 57806"
-        )
-        successes += 1
-        actual_changes += int(result["changed_points"])
-        log(
-            f"[refresh] production_index: OK; fetched_latest={result['fetched_latest']}; "
-            f"new={result['new_points']}; changed={result['changed_points']}"
-        )
-    except Exception as exc:  # noqa: BLE001
-        message = str(exc)[:1000]
-        failures["production_index"] = message
-        updated["status"]["production_index"] = status_source_error(
-            updated["status"].get("production_index"),
-            updated["series"]["production_index"],
-            message,
-        )
-        log(f"[refresh] production_index: ERROR: {message}")
+    if rosstat_refresh_due(updated["status"].get("road_freight")):
+        log("[refresh] road_freight: loading Rosstat workbook…")
+        try:
+            dates, values = fetch_rosstat_road_freight()
+            result = merge_numeric_series(updated["series"]["road_freight"], dates, values)
+            updated["series"]["road_freight"]["dates"] = result["dates"]
+            updated["series"]["road_freight"]["values"] = result["values"]
+            updated["status"]["road_freight"] = status_ok(
+                result, "Обновлено из официальной таблицы Росстата"
+            )
+            successes += 1
+            actual_changes += int(result["changed_points"])
+            log(
+                f"[refresh] road_freight: OK; fetched_latest={result['fetched_latest']}; "
+                f"new={result['new_points']}; changed={result['changed_points']}"
+            )
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc)[:1000]
+            failures["road_freight"] = message
+            updated["status"]["road_freight"] = status_source_error(
+                updated["status"].get("road_freight"),
+                updated["series"]["road_freight"],
+                message,
+            )
+            log(f"[refresh] road_freight: ERROR: {message}")
+    else:
+        skipped += 1
+        log("[refresh] road_freight: skipped; Rosstat was checked less than 20 hours ago")
+
+    if rosstat_refresh_due(updated["status"].get("production_index")):
+        log("[refresh] production_index: loading Rosstat workbook…")
+        try:
+            fetched = fetch_rosstat_production_history()
+            result = merge_production_series(updated["series"]["production_index"], fetched)
+            for field in (
+                "default_mode", "mode_labels", "series_labels", "modes", "dates", "values"
+            ):
+                updated["series"]["production_index"][field] = result[field]
+            updated["status"]["production_index"] = status_ok(
+                result, "Обновлено из официальной таблицы Росстата"
+            )
+            successes += 1
+            actual_changes += int(result["changed_points"])
+            log(
+                f"[refresh] production_index: OK; fetched_latest={result['fetched_latest']}; "
+                f"new={result['new_points']}; changed={result['changed_points']}"
+            )
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc)[:1000]
+            failures["production_index"] = message
+            updated["status"]["production_index"] = status_source_error(
+                updated["status"].get("production_index"),
+                updated["series"]["production_index"],
+                message,
+            )
+            log(f"[refresh] production_index: ERROR: {message}")
+    else:
+        skipped += 1
+        log("[refresh] production_index: skipped; Rosstat was checked less than 20 hours ago")
 
     log("[refresh] CBR foreign trade: loading monthly workbook…")
     try:
@@ -2195,7 +2693,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         }
         log(f"[refresh] hormuz: ERROR: {message}")
 
-    total = len(request_jobs) + 1 + 2 + len(PROFINANCE) + 1
+    total = len(request_jobs) + 2 + 2 + len(PROFINANCE) + 1
     latest_dates = [
         series["dates"][-1]
         for series in updated.get("series", {}).values()
@@ -2206,7 +2704,8 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
     updated["source_mode"] = "web_refresh" if successes else "pbix_snapshot"
     summary = {
         "successes": successes,
-        "failures": total - successes,
+        "failures": len(failures),
+        "skipped": skipped,
         "total": total,
         "actual_changed_points": actual_changes,
         "updated_at": now_iso(),
@@ -2218,15 +2717,20 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
 
 
 def validate_required_currency_series(payload: dict[str, Any]) -> None:
-    """Validate core rows without making a Fedstat outage block publishing.
+    """Validate core rows without making a Rosstat outage block publishing.
 
-    Set FEDSTAT_REQUIRED=1 for deployments that prefer a fail-closed policy.
-    The default keeps the last-known-good Fedstat rows and publishes successful
-    updates from every other source.
+    The last-known-good Rosstat history is retained on source errors. Set
+    ROSSTAT_REQUIRED=1 for deployments where publishing without a road-freight
+    row is not acceptable. FEDSTAT_REQUIRED remains a compatibility alias.
     """
-    required = ("rubusd", "rubeur", "rubcny", "exports", "imports")
-    if os.environ.get("FEDSTAT_REQUIRED", "").strip() == "1":
-        required += ("production_index", "road_freight")
+    required = (
+        "rubusd", "rubeur", "rubcny", "production_index", "exports", "imports"
+    )
+    if (
+        os.environ.get("ROSSTAT_REQUIRED", "").strip() == "1"
+        or os.environ.get("FEDSTAT_REQUIRED", "").strip() == "1"
+    ):
+        required += ("road_freight",)
     for key in required:
         series = payload.get("series", {}).get(key, {})
         dates = series.get("dates") or []
