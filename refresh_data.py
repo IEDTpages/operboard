@@ -34,7 +34,7 @@ SNAPSHOT_PATH = DATA_DIR / "snapshot.json"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/126.0.0.0 Safari/537.36 OperboardHTML/2.0"
+    "Chrome/138.0.0.0 Safari/537.36"
 )
 TIMEOUT_SECONDS = 45
 START_DATE = date(2021, 1, 1)
@@ -1831,6 +1831,35 @@ def status_ok(result: dict[str, Any], message: str) -> dict[str, Any]:
     }
 
 
+def status_source_error(
+    previous: dict[str, Any] | None,
+    series: dict[str, Any],
+    message: str,
+) -> dict[str, Any]:
+    """Report a source outage without discarding last-known-good data."""
+    has_data = bool(series.get("dates"))
+    previous = previous if isinstance(previous, dict) else {}
+    if has_data:
+        detail = (
+            "Источник временно недоступен; сохранены последние успешно "
+            f"полученные данные. {message}"
+        )
+    else:
+        detail = (
+            "Источник временно недоступен; остальные показатели продолжают "
+            f"обновляться. {message}"
+        )
+    status = {
+        "state": "stale" if has_data else "error",
+        "updated_at": now_iso(),
+        "message": detail[:1000],
+    }
+    if has_data:
+        status["last_success_at"] = previous.get("updated_at")
+        status["merged_latest"] = series["dates"][-1]
+    return status
+
+
 def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     updated = ensure_series_defaults(json.loads(json.dumps(base_payload, ensure_ascii=False)))
     updated.setdefault("status", {})
@@ -1869,11 +1898,16 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         except Exception as exc:  # noqa: BLE001
             message = str(exc)[:1000]
             failures[key] = message
-            updated["status"][key] = {
-                "state": "error",
-                "updated_at": now_iso(),
-                "message": message,
-            }
+            if key == "road_freight":
+                updated["status"][key] = status_source_error(
+                    updated["status"].get(key), updated["series"][key], message
+                )
+            else:
+                updated["status"][key] = {
+                    "state": "error",
+                    "updated_at": now_iso(),
+                    "message": message,
+                }
             log(f"[refresh] {key}: ERROR: {message}")
 
     log("[refresh] production_index: loading Fedstat 57806…")
@@ -1896,11 +1930,11 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
     except Exception as exc:  # noqa: BLE001
         message = str(exc)[:1000]
         failures["production_index"] = message
-        updated["status"]["production_index"] = {
-            "state": "error",
-            "updated_at": now_iso(),
-            "message": message,
-        }
+        updated["status"]["production_index"] = status_source_error(
+            updated["status"].get("production_index"),
+            updated["series"]["production_index"],
+            message,
+        )
         log(f"[refresh] production_index: ERROR: {message}")
 
     log("[refresh] CBR foreign trade: loading monthly workbook…")
@@ -2016,10 +2050,15 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
 
 
 def validate_required_currency_series(payload: dict[str, Any]) -> None:
-    """Ensure essential public series exist before publishing."""
-    required = (
-        "rubusd", "rubeur", "rubcny", "production_index", "exports", "imports"
-    )
+    """Validate core rows without making a Fedstat outage block publishing.
+
+    Set FEDSTAT_REQUIRED=1 for deployments that prefer a fail-closed policy.
+    The default keeps the last-known-good Fedstat rows and publishes successful
+    updates from every other source.
+    """
+    required = ("rubusd", "rubeur", "rubcny", "exports", "imports")
+    if os.environ.get("FEDSTAT_REQUIRED", "").strip() == "1":
+        required += ("production_index", "road_freight")
     for key in required:
         series = payload.get("series", {}).get(key, {})
         dates = series.get("dates") or []

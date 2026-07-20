@@ -122,6 +122,41 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(dates, ["2024-12-31"])
         self.assertEqual(values, [6250])
 
+    def test_fedstat_is_not_required_for_other_updates(self) -> None:
+        payload = {
+            "series": {
+                key: {"dates": ["2026-01-31"], "values": [1]}
+                for key in ("rubusd", "rubeur", "rubcny", "exports", "imports")
+            }
+        }
+        payload["series"]["production_index"] = {"dates": [], "values": []}
+        payload["series"]["road_freight"] = {"dates": [], "values": []}
+        with patch.dict(os.environ, {}, clear=True):
+            refresh_data.validate_required_currency_series(payload)
+
+    def test_fedstat_can_be_made_strict(self) -> None:
+        payload = {
+            "series": {
+                key: {"dates": ["2026-01-31"], "values": [1]}
+                for key in ("rubusd", "rubeur", "rubcny", "exports", "imports")
+            }
+        }
+        payload["series"]["production_index"] = {"dates": [], "values": []}
+        payload["series"]["road_freight"] = {"dates": [], "values": []}
+        with patch.dict(os.environ, {"FEDSTAT_REQUIRED": "1"}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "production_index"):
+                refresh_data.validate_required_currency_series(payload)
+
+    def test_fedstat_error_preserves_last_good_marker(self) -> None:
+        status = refresh_data.status_source_error(
+            {"updated_at": "2026-07-01T00:00:00+00:00"},
+            {"dates": ["2026-05-31"], "values": [100.1]},
+            "403 Forbidden",
+        )
+        self.assertEqual(status["state"], "stale")
+        self.assertEqual(status["merged_latest"], "2026-05-31")
+        self.assertIn("сохранены последние", status["message"])
+
     def test_extract_monthly_production_index(self) -> None:
         point = refresh_data._extract_production_point(
             "Индекс промышленного производства в мае 2026 года по сравнению "
