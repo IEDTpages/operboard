@@ -85,24 +85,6 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Set up R for fedstatAPIr
-        if: steps.freshness.outputs.refresh_due == 'true'
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: "release"
-          use-public-rspm: true
-
-      - name: Install fedstatAPIr
-        if: steps.freshness.outputs.refresh_due == 'true'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: any::fedstatAPIr
-          cache-version: 1
-
-      - name: Verify fedstatAPIr
-        if: steps.freshness.outputs.refresh_due == 'true'
-        run: Rscript -e 'cat("fedstatAPIr ", as.character(packageVersion("fedstatAPIr")), "\n")'
-
       - name: Install Python dependencies
         if: steps.freshness.outputs.refresh_due == 'true'
         run: |
@@ -115,9 +97,7 @@ jobs:
         env:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
           ATI_API_TOKEN: ${{ secrets.ATI_API_TOKEN }}
-          FEDSTAT_BACKEND: "fedstatapir"
-          FEDSTAT_TIMEOUT_SECONDS: "90"
-          FEDSTAT_RETRY_MAX: "3"
+          FORCE_ROSSTAT_REFRESH: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           set -euo pipefail
 
@@ -160,10 +140,10 @@ jobs:
           missing = required.difference(payload.get("series", {}))
           if missing:
               raise SystemExit(f"Missing dashboard series: {sorted(missing)}")
-          # Fedstat may reject GitHub-hosted runner IPs with HTTP 403. This must
-          # not prevent successful updates from all other dashboard sources.
-          # Existing Fedstat observations are retained by refresh_data.py.
-          non_empty = {"rubusd", "rubeur", "rubcny", "exports", "imports"}
+          # Temporary Rosstat outages must not discard the seeded history.
+          non_empty = {
+              "rubusd", "rubeur", "rubcny", "exports", "imports", "road_freight"
+          }
           for key in sorted(non_empty):
               dates = payload["series"][key].get("dates", [])
               values = payload["series"][key].get("values", [])
@@ -171,6 +151,8 @@ jobs:
                   raise SystemExit(f"Invalid required series {key}: {len(dates)} dates / {len(values)} values")
               print(f"{key}: {dates[-1]} = {values[-1]}")
           production = payload["series"]["production_index"]
+          if not production.get("dates"):
+              raise SystemExit("production_index: no Rosstat or seeded history")
           for mode in ("mom", "yoy", "ytd_yoy"):
               block = production.get("modes", {}).get(mode, {})
               dates = block.get("dates", [])
@@ -178,11 +160,9 @@ jobs:
               lengths = [len(lines.get(line, [])) for line in ("total", "mining", "manufacturing")]
               if dates and any(length != len(dates) for length in lengths):
                   raise SystemExit(f"Corrupted production mode: {mode}")
-          if not production.get("dates"):
-              print("production_index: no cached Fedstat values; publishing other sources")
           road = payload["series"]["road_freight"]
           if not road.get("dates"):
-              print("road_freight: no cached Fedstat values; publishing other sources")
+              raise SystemExit("road_freight: no Rosstat or seeded history")
           PY
 
       - name: Save refreshed data in repository
@@ -194,22 +174,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           cp data/current.json /tmp/current.json
-          if [[ -f data/fedstat_filters.json ]]; then
-            cp data/fedstat_filters.json /tmp/fedstat_filters.json
-          fi
 
           for attempt in 1 2 3; do
             echo "Push attempt ${attempt} of 3"
             git fetch origin main
             git reset --hard origin/main
             cp /tmp/current.json data/current.json
-            if [[ -f /tmp/fedstat_filters.json ]]; then
-              cp /tmp/fedstat_filters.json data/fedstat_filters.json
-            fi
             git add data/current.json
-            if [[ -f data/fedstat_filters.json ]]; then
-              git add data/fedstat_filters.json
-            fi
 
             if git diff --cached --quiet; then
               echo "Dashboard data has not changed. Nothing to commit."
