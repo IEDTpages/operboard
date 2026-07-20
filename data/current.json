@@ -1,6 +1,6 @@
 {
   "schema_version": 4,
-  "generated_at": "2026-07-20T10:40:17+00:00",
+  "generated_at": "2026-07-20T11:03:57+00:00",
   "data_as_of": "2026-07-20",
   "source_mode": "web_refresh",
   "report": {
@@ -14283,7 +14283,7 @@
         84.87,
         88.32,
         90.74,
-        88.38
+        88.15
       ]
     },
     "urals": {
@@ -17726,7 +17726,7 @@
         67.01,
         70.92,
         73.34,
-        65.3
+        65.08
       ]
     },
     "ttf": {
@@ -20633,7 +20633,7 @@
         651.99,
         694.83,
         711.8,
-        694.49
+        694.08
       ]
     },
     "ara": {
@@ -23743,7 +23743,7 @@
         3151.75,
         3178.5,
         3167.5,
-        3147.5
+        3147.25
       ]
     },
     "wheat": {
@@ -33611,16 +33611,16 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:39+00:00",
+      "updated_at": "2026-07-20T11:01:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:41+00:00",
+      "updated_at": "2026-07-20T11:01:27+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -33629,97 +33629,97 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:39+00:00",
+      "updated_at": "2026-07-20T11:01:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:40+00:00",
+      "updated_at": "2026-07-20T11:01:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:40+00:00",
+      "updated_at": "2026-07-20T11:01:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 2,
-      "changed_points": 3
+      "new_points": 0,
+      "changed_points": 1
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 2,
-      "changed_points": 3
+      "new_points": 0,
+      "changed_points": 1
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 2,
-      "changed_points": 3
+      "new_points": 0,
+      "changed_points": 1
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 1,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 1,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 1
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:54+00:00",
+      "updated_at": "2026-07-20T11:01:39+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:57+00:00",
+      "updated_at": "2026-07-20T11:01:41+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:40:17+00:00",
+      "updated_at": "2026-07-20T11:03:57+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -33728,12 +33728,12 @@
     },
     "production_index": {
       "state": "error",
-      "updated_at": "2026-07-20T10:38:05+00:00",
-      "message": "Источник временно недоступен; остальные показатели продолжают обновляться. ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1.8 seconds... Request failed [403]. Retrying in 3.3 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
+      "updated_at": "2026-07-20T11:01:46+00:00",
+      "message": "Источник временно недоступен; остальные показатели продолжают обновляться. ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 2 seconds... Request failed [403]. Retrying in 1 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:38:05+00:00",
+      "updated_at": "2026-07-20T11:01:47+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -33742,7 +33742,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:38:05+00:00",
+      "updated_at": "2026-07-20T11:01:47+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -33751,28 +33751,28 @@
     },
     "road_freight": {
       "state": "error",
-      "updated_at": "2026-07-20T10:37:49+00:00",
-      "message": "Источник временно недоступен; остальные показатели продолжают обновляться. ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1 seconds... Request failed [403]. Retrying in 3.6 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
+      "updated_at": "2026-07-20T11:01:34+00:00",
+      "message": "Источник временно недоступен; остальные показатели продолжают обновляться. ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1 seconds... Request failed [403]. Retrying in 3.7 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-20T10:37:50+00:00",
+      "updated_at": "2026-07-20T11:01:35+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-19",
       "merged_latest": "2026-07-19",
-      "new_points": 592,
-      "changed_points": 592
+      "new_points": 0,
+      "changed_points": 0
     }
   },
   "refresh_summary": {
     "successes": 16,
     "failures": 2,
     "total": 18,
-    "actual_changed_points": 611,
-    "updated_at": "2026-07-20T10:40:17+00:00",
+    "actual_changed_points": 4,
+    "updated_at": "2026-07-20T11:03:57+00:00",
     "failed_sources": {
-      "road_freight": "ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1 seconds... Request failed [403]. Retrying in 3.6 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted",
-      "production_index": "ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1.8 seconds... Request failed [403]. Retrying in 3.3 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
+      "road_freight": "ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 1 seconds... Request failed [403]. Retrying in 3.7 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted",
+      "production_index": "ЕМИСС/fedstatAPIr: Request failed [403]. Retrying in 2 seconds... Request failed [403]. Retrying in 1 seconds... Error in read_html.response(GET_res, encoding = \"UTF-8\") : Forbidden (HTTP 403). Calls: <Anonymous> -> <Anonymous> -> read_html.response -> <Anonymous> Execution halted"
     }
   }
 }
