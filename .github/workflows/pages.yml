@@ -139,7 +139,10 @@ jobs:
           missing = required.difference(payload.get("series", {}))
           if missing:
               raise SystemExit(f"Missing dashboard series: {sorted(missing)}")
-          non_empty = {"rubusd", "rubeur", "rubcny", "production_index", "exports", "imports"}
+          # Fedstat may reject GitHub-hosted runner IPs with HTTP 403. This must
+          # not prevent successful updates from all other dashboard sources.
+          # Existing Fedstat observations are retained by refresh_data.py.
+          non_empty = {"rubusd", "rubeur", "rubcny", "exports", "imports"}
           for key in sorted(non_empty):
               dates = payload["series"][key].get("dates", [])
               values = payload["series"][key].get("values", [])
@@ -151,8 +154,14 @@ jobs:
               block = production.get("modes", {}).get(mode, {})
               dates = block.get("dates", [])
               lines = block.get("series", {})
-              if not dates or any(len(lines.get(line, [])) != len(dates) for line in ("total", "mining", "manufacturing")):
-                  raise SystemExit(f"Invalid production mode: {mode}")
+              lengths = [len(lines.get(line, [])) for line in ("total", "mining", "manufacturing")]
+              if dates and any(length != len(dates) for length in lengths):
+                  raise SystemExit(f"Corrupted production mode: {mode}")
+          if not production.get("dates"):
+              print("production_index: no cached Fedstat values; publishing other sources")
+          road = payload["series"]["road_freight"]
+          if not road.get("dates"):
+              print("road_freight: no cached Fedstat values; publishing other sources")
           PY
 
       - name: Save refreshed data in repository
