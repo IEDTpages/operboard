@@ -1,6 +1,6 @@
 {
   "schema_version": 4,
-  "generated_at": "2026-07-20T09:01:33+00:00",
+  "generated_at": "2026-07-20T10:35:12+00:00",
   "data_as_of": "2026-07-20",
   "source_mode": "web_refresh",
   "report": {
@@ -14283,7 +14283,7 @@
         84.87,
         88.32,
         90.74,
-        88.22
+        88.23
       ]
     },
     "urals": {
@@ -20633,7 +20633,7 @@
         651.99,
         694.83,
         711.8,
-        687.87
+        693.77
       ]
     },
     "ara": {
@@ -20838,7 +20838,7 @@
         118.9,
         118.9,
         121.35,
-        121.75
+        119.55
       ]
     },
     "lme": {
@@ -23743,7 +23743,7 @@
         3151.75,
         3178.5,
         3167.5,
-        3158.75
+        3146.75
       ]
     },
     "wheat": {
@@ -33611,7 +33611,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:58:52+00:00",
+      "updated_at": "2026-07-20T10:32:35+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -33620,7 +33620,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:58:54+00:00",
+      "updated_at": "2026-07-20T10:32:37+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -33629,7 +33629,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:58:53+00:00",
+      "updated_at": "2026-07-20T10:32:35+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
@@ -33638,7 +33638,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:58:53+00:00",
+      "updated_at": "2026-07-20T10:32:36+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
@@ -33647,7 +33647,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:58:53+00:00",
+      "updated_at": "2026-07-20T10:32:36+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-18",
       "merged_latest": "2026-07-18",
@@ -33656,7 +33656,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:32+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -33665,16 +33665,16 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:32+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
       "new_points": 0,
-      "changed_points": 1
+      "changed_points": 0
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:32+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -33683,16 +33683,16 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:32+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 1
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:32+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -33701,7 +33701,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:59:10+00:00",
+      "updated_at": "2026-07-20T10:32:50+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33710,7 +33710,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:59:12+00:00",
+      "updated_at": "2026-07-20T10:32:53+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -33719,7 +33719,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-20T09:01:33+00:00",
+      "updated_at": "2026-07-20T10:35:12+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -33728,12 +33728,12 @@
     },
     "production_index": {
       "state": "error",
-      "updated_at": "2026-07-20T08:59:21+00:00",
+      "updated_at": "2026-07-20T10:33:01+00:00",
       "message": "Источник временно недоступен; остальные показатели продолжают обновляться. 403 Client Error: Forbidden for url: https://www.fedstat.ru/indicator/57806"
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:59:21+00:00",
+      "updated_at": "2026-07-20T10:33:02+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -33742,7 +33742,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:59:21+00:00",
+      "updated_at": "2026-07-20T10:33:02+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -33751,12 +33751,12 @@
     },
     "road_freight": {
       "state": "error",
-      "updated_at": "2026-07-20T08:59:04+00:00",
+      "updated_at": "2026-07-20T10:32:46+00:00",
       "message": "Источник временно недоступен; остальные показатели продолжают обновляться. 403 Client Error: Forbidden for url: https://www.fedstat.ru/indicator/31314"
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-20T08:59:05+00:00",
+      "updated_at": "2026-07-20T10:32:47+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-19",
       "merged_latest": "2026-07-19",
@@ -33769,7 +33769,7 @@
     "failures": 2,
     "total": 18,
     "actual_changed_points": 4,
-    "updated_at": "2026-07-20T09:01:33+00:00",
+    "updated_at": "2026-07-20T10:35:12+00:00",
     "failed_sources": {
       "road_freight": "403 Client Error: Forbidden for url: https://www.fedstat.ru/indicator/31314",
       "production_index": "403 Client Error: Forbidden for url: https://www.fedstat.ru/indicator/57806"
