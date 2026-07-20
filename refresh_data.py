@@ -7,7 +7,10 @@ import json
 import math
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 import time
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
@@ -46,6 +49,7 @@ FEDSTAT_PRODUCTION_URL = "https://www.fedstat.ru/indicator/57806"
 FEDSTAT_ROAD_URL = "https://www.fedstat.ru/indicator/31314"
 FEDSTAT_DATA_URL = "https://www.fedstat.ru/indicator/data.do?format=sdmx"
 FEDSTAT_CACHE_PATH = DATA_DIR / "fedstat_filters.json"
+FEDSTAT_R_SCRIPT = ROOT / "tools" / "fetch_fedstat.R"
 ROSSTAT_INDUSTRIAL_URL = "https://rosstat.gov.ru/enterprise_industrial"
 ROSSTAT_TRANSPORT_URL = "https://rosstat.gov.ru/statistics/transport"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
@@ -484,8 +488,8 @@ def parse_fedstat_filter_metadata(
     """Parse filter ids from the JavaScript embedded in a Fedstat page.
 
     Fedstat does not expose a stable documented API for filter identifiers.
-    This follows the same public-page workflow as fedstatAPIr, while keeping
-    the dashboard refresh entirely in Python.
+    This parser is retained only for the explicit legacy HTTP backend. The
+    default backend delegates filter discovery and SDMX parsing to fedstatAPIr.
     """
     soup = BeautifulSoup(html, "lxml")
     script = next(
@@ -582,6 +586,97 @@ def _save_fedstat_cache(cache: dict[str, Any]) -> None:
     temporary.replace(FEDSTAT_CACHE_PATH)
 
 
+def _fedstat_backend() -> str:
+    return os.environ.get("FEDSTAT_BACKEND", "fedstatapir").strip().lower()
+
+
+def _run_fedstat_apir(arguments: list[str], output_path: Path) -> Any:
+    """Run the R bridge without exposing request payloads in workflow logs."""
+    rscript = shutil.which("Rscript")
+    if not rscript:
+        raise RuntimeError(
+            "ЕМИСС/fedstatAPIr: Rscript не найден; GitHub workflow должен установить R"
+        )
+    if not FEDSTAT_R_SCRIPT.exists():
+        raise RuntimeError(f"ЕМИСС/fedstatAPIr: не найден {FEDSTAT_R_SCRIPT}")
+    timeout = int(os.environ.get("FEDSTAT_R_PROCESS_TIMEOUT", "720"))
+    process = subprocess.run(
+        [rscript, str(FEDSTAT_R_SCRIPT), *arguments, str(output_path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+    if process.returncode != 0:
+        detail = (process.stderr or process.stdout or "неизвестная ошибка R").strip()
+        detail = re.sub(r"\s+", " ", detail)[-1200:]
+        raise RuntimeError(f"ЕМИСС/fedstatAPIr: {detail}")
+    try:
+        return json.loads(output_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"ЕМИСС/fedstatAPIr: некорректный JSON от R: {exc}") from exc
+
+
+def _fedstat_ids_to_metadata(
+    rows: list[dict[str, Any]], indicator_id: str
+) -> dict[str, Any]:
+    fields: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for row in rows:
+        field_id = str(row.get("filter_field_id", "")).strip()
+        value_id = str(row.get("filter_value_id", "")).strip()
+        if not field_id or not value_id:
+            continue
+        if field_id not in fields:
+            order.append(field_id)
+            fields[field_id] = {
+                "id": field_id,
+                "title": str(row.get("filter_field_title") or field_id),
+                "object_type": str(
+                    row.get("filter_field_object_ids") or "lineObjectIds"
+                ),
+                "values": [],
+            }
+        fields[field_id]["values"].append(
+            {
+                "id": value_id,
+                "title": str(row.get("filter_value_title") or value_id),
+            }
+        )
+    if "0" not in fields:
+        order.insert(0, "0")
+        fields["0"] = {
+            "id": "0",
+            "title": "Показатель",
+            "object_type": "filterObjectIds",
+            "values": [
+                {"id": str(indicator_id), "title": f"Показатель {indicator_id}"}
+            ],
+        }
+    indicator_values = fields["0"]["values"]
+    title = str(
+        indicator_values[0]["title"]
+        if indicator_values
+        else f"Показатель {indicator_id}"
+    )
+    return {
+        "indicator_id": str(indicator_id),
+        "title": title,
+        "fields": [fields[field_id] for field_id in order],
+        "backend": "fedstatAPIr",
+    }
+
+
+def _fetch_fedstat_ids_via_r(indicator_id: str) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="operboard-fedstat-") as directory:
+        output_path = Path(directory) / "ids.json"
+        rows = _run_fedstat_apir(["ids", str(indicator_id)], output_path)
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError("ЕМИСС/fedstatAPIr: таблица идентификаторов фильтров пуста")
+    return _fedstat_ids_to_metadata(rows, str(indicator_id))
+
+
 def fetch_fedstat_filter_metadata(indicator_id: str, *, force: bool = False) -> dict[str, Any]:
     cache = _load_fedstat_cache()
     cached = cache.get("indicators", {}).get(str(indicator_id))
@@ -603,15 +698,18 @@ def fetch_fedstat_filter_metadata(indicator_id: str, *, force: bool = False) -> 
                         values.append({"id": str(year), "title": str(year)})
         return cached
 
-    response = get(
-        f"https://www.fedstat.ru/indicator/{indicator_id}",
-        headers={
-            "User-Agent": USER_AGENT,
-            "Referer": "https://www.fedstat.ru/",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-    )
-    metadata = parse_fedstat_filter_metadata(response.text, str(indicator_id))
+    if _fedstat_backend() == "fedstatapir":
+        metadata = _fetch_fedstat_ids_via_r(str(indicator_id))
+    else:
+        response = get(
+            f"https://www.fedstat.ru/indicator/{indicator_id}",
+            headers={
+                "User-Agent": USER_AGENT,
+                "Referer": "https://www.fedstat.ru/",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+        )
+        metadata = parse_fedstat_filter_metadata(response.text, str(indicator_id))
     metadata["cached_at"] = now_iso()
     cache.setdefault("indicators", {})[str(indicator_id)] = metadata
     cache["updated_at"] = now_iso()
@@ -785,6 +883,70 @@ def post_fedstat_sdmx(metadata: dict[str, Any], selected: list[dict[str, Any]]) 
     raise last_error
 
 
+def _selected_fedstat_rows(selected: list[dict[str, Any]]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for field in selected:
+        for value in field.get("values", []):
+            rows.append(
+                {
+                    "filter_field_id": str(field["id"]),
+                    "filter_field_title": str(field.get("title") or field["id"]),
+                    "filter_value_id": str(value["id"]),
+                    "filter_value_title": str(value.get("title") or value["id"]),
+                    "filter_field_object_ids": str(
+                        field.get("object_type") or "lineObjectIds"
+                    ),
+                }
+            )
+    return rows
+
+
+def _fedstat_table_to_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for row in rows:
+        value = to_number(row.get("ObsValue"))
+        if value is None:
+            continue
+        time_value = row.get("Time") or row.get("TIME") or ""
+        unit = row.get("EI") or row.get("UNIT") or ""
+        dimensions = {
+            str(key): item
+            for key, item in row.items()
+            if key not in {"ObsValue", "Time", "TIME"}
+            and item not in (None, "")
+            and not str(key).lower().endswith("_code")
+        }
+        records.append(
+            {
+                "time": str(time_value),
+                "value": normalise_number(value),
+                "unit": str(unit),
+                "dimensions": dimensions,
+            }
+        )
+    if not records:
+        raise RuntimeError("ЕМИСС/fedstatAPIr: разобранная таблица данных пуста")
+    return records
+
+
+def post_fedstat_apir_records(
+    metadata: dict[str, Any], selected: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    with tempfile.TemporaryDirectory(prefix="operboard-fedstat-") as directory:
+        input_path = Path(directory) / "selected_ids.json"
+        output_path = Path(directory) / "records.json"
+        input_path.write_text(
+            json.dumps(_selected_fedstat_rows(selected), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        rows = _run_fedstat_apir(
+            ["data", str(metadata["indicator_id"]), str(input_path)], output_path
+        )
+    if not isinstance(rows, list):
+        raise RuntimeError("ЕМИСС/fedstatAPIr: R вернул данные неизвестного формата")
+    return _fedstat_table_to_records(rows)
+
+
 def _xml_local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].split(":")[-1]
 
@@ -883,12 +1045,18 @@ def parse_fedstat_sdmx(content: bytes) -> list[dict[str, Any]]:
 def fetch_fedstat_records(indicator_id: str, kind: str) -> list[dict[str, Any]]:
     metadata = fetch_fedstat_filter_metadata(indicator_id)
     try:
-        content = post_fedstat_sdmx(metadata, select_fedstat_filters(metadata, kind))
+        selected = select_fedstat_filters(metadata, kind)
+        if _fedstat_backend() == "fedstatapir":
+            return post_fedstat_apir_records(metadata, selected)
+        content = post_fedstat_sdmx(metadata, selected)
     except Exception:
         # Cached filter ids can be retired after an indicator redesign. Refresh
         # them once and repeat the small filtered query.
         metadata = fetch_fedstat_filter_metadata(indicator_id, force=True)
-        content = post_fedstat_sdmx(metadata, select_fedstat_filters(metadata, kind))
+        selected = select_fedstat_filters(metadata, kind)
+        if _fedstat_backend() == "fedstatapir":
+            return post_fedstat_apir_records(metadata, selected)
+        content = post_fedstat_sdmx(metadata, selected)
     return parse_fedstat_sdmx(content)
 
 

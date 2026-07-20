@@ -122,6 +122,74 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(dates, ["2024-12-31"])
         self.assertEqual(values, [6250])
 
+    def test_fedstatapir_ids_are_converted_to_filter_metadata(self) -> None:
+        metadata = refresh_data._fedstat_ids_to_metadata(
+            [
+                {
+                    "filter_field_id": "0",
+                    "filter_field_title": "Показатель",
+                    "filter_value_id": "57806",
+                    "filter_value_title": "Индекс производства",
+                    "filter_field_object_ids": "filterObjectIds",
+                },
+                {
+                    "filter_field_id": "3",
+                    "filter_field_title": "Год",
+                    "filter_value_id": "2026",
+                    "filter_value_title": "2026",
+                    "filter_field_object_ids": "columnObjectIds",
+                },
+            ],
+            "57806",
+        )
+        self.assertEqual(metadata["backend"], "fedstatAPIr")
+        self.assertEqual(metadata["title"], "Индекс производства")
+        self.assertEqual(metadata["fields"][1]["object_type"], "columnObjectIds")
+
+    def test_fedstatapir_table_is_converted_to_records(self) -> None:
+        records = refresh_data._fedstat_table_to_records(
+            [
+                {
+                    "EI": "процент",
+                    "ObsValue": "98.4",
+                    "Time": "2026-05",
+                    "s_POK": "Отчетный месяц к предыдущему месяцу",
+                    "s_OKVED2": "Добыча полезных ископаемых",
+                    "s_OKVED2_code": "B",
+                }
+            ]
+        )
+        self.assertEqual(records[0]["value"], 98.4)
+        self.assertEqual(records[0]["unit"], "процент")
+        self.assertNotIn("s_OKVED2_code", records[0]["dimensions"])
+
+    def test_fedstatapir_is_default_network_backend(self) -> None:
+        metadata = {
+            "indicator_id": "31314",
+            "title": "Автоперевозки",
+            "fields": [
+                {
+                    "id": "0",
+                    "title": "Показатель",
+                    "object_type": "filterObjectIds",
+                    "values": [{"id": "31314", "title": "Автоперевозки"}],
+                }
+            ],
+        }
+        expected = [{"time": "2025", "value": 6250, "dimensions": {}}]
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(
+                refresh_data, "fetch_fedstat_filter_metadata", return_value=metadata
+            ):
+                with patch.object(
+                    refresh_data, "post_fedstat_apir_records", return_value=expected
+                ) as post_r:
+                    with patch.object(refresh_data, "post_fedstat_sdmx") as post_http:
+                        result = refresh_data.fetch_fedstat_records("31314", "road")
+        self.assertEqual(result, expected)
+        post_r.assert_called_once()
+        post_http.assert_not_called()
+
     def test_fedstat_is_not_required_for_other_updates(self) -> None:
         payload = {
             "series": {
