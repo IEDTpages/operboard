@@ -1,6 +1,6 @@
 {
   "schema_version": 6,
-  "generated_at": "2026-07-20T16:06:04+00:00",
+  "generated_at": "2026-07-20T20:55:17+00:00",
   "data_as_of": "2026-07-21",
   "source_mode": "web_refresh",
   "report": {
@@ -14289,7 +14289,7 @@
         84.87,
         88.32,
         90.74,
-        87.91
+        88.97
       ]
     },
     "urals": {
@@ -17732,7 +17732,7 @@
         67.01,
         70.92,
         73.34,
-        64.84
+        65.87
       ]
     },
     "ttf": {
@@ -20639,7 +20639,7 @@
         651.99,
         694.83,
         711.8,
-        687.4
+        690.66
       ]
     },
     "ara": {
@@ -23749,7 +23749,7 @@
         3151.75,
         3178.5,
         3167.5,
-        3137.25
+        3137.75
       ]
     },
     "wheat": {
@@ -34261,7 +34261,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:24+00:00",
+      "updated_at": "2026-07-20T20:52:54+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34270,7 +34270,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:26+00:00",
+      "updated_at": "2026-07-20T20:52:57+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -34279,7 +34279,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:24+00:00",
+      "updated_at": "2026-07-20T20:52:55+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
@@ -34288,7 +34288,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:24+00:00",
+      "updated_at": "2026-07-20T20:52:55+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
@@ -34297,7 +34297,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:25+00:00",
+      "updated_at": "2026-07-20T20:52:55+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
@@ -34306,7 +34306,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34315,7 +34315,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34324,7 +34324,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34333,7 +34333,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34342,7 +34342,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -34351,7 +34351,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:31+00:00",
+      "updated_at": "2026-07-20T20:53:03+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -34360,7 +34360,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:34+00:00",
+      "updated_at": "2026-07-20T20:53:06+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-17",
       "merged_latest": "2026-07-17",
@@ -34369,7 +34369,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:06:04+00:00",
+      "updated_at": "2026-07-20T20:55:17+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -34385,7 +34385,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:53+00:00",
+      "updated_at": "2026-07-20T20:53:06+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -34394,7 +34394,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:53+00:00",
+      "updated_at": "2026-07-20T20:53:06+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -34410,7 +34410,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-20T16:03:27+00:00",
+      "updated_at": "2026-07-20T20:52:59+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-19",
       "merged_latest": "2026-07-19",
@@ -34420,14 +34420,11 @@
   },
   "refresh_summary": {
     "successes": 16,
-    "failures": 2,
-    "skipped": 0,
+    "failures": 0,
+    "skipped": 2,
     "total": 18,
     "actual_changed_points": 4,
-    "updated_at": "2026-07-20T16:06:04+00:00",
-    "failed_sources": {
-      "road_freight": "Росстат: ссылка «Перевозки грузов по видам транспорта» не найдена; Росстат: страница источника недоступна; https://rosstat.gov.ru/statistics/transport: HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)'))); https://rosstat.gov.ru/statistics/transport?print=1: HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /statistics/transport?print=1 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))",
-      "production_index": "Росстат: книга ИПП не обработана: HTTPSConnectionPool(host='rosstat.gov.ru', port=443): Max retries exceeded with url: /storage/mediabank/ind-baza_2023.xlsx (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)')))"
-    }
+    "updated_at": "2026-07-20T20:55:17+00:00",
+    "failed_sources": {}
   }
 }
