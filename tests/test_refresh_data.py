@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import os
 import unittest
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -423,6 +423,39 @@ class RefreshDataTests(unittest.TestCase):
             104.5,
         )
 
+    def test_parse_rosstat_production_real_excel_date_headers(self) -> None:
+        """Rosstat displays dates as years/months although cells are datetimes."""
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame([["Содержание"]]).to_excel(
+                writer, sheet_name="Содержание", index=False, header=False
+            )
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                # Match the actual May workbook dimensions from GitHub Actions:
+                # 140 rows, 7 columns, with five months in C:G.
+                frame = pd.DataFrame([[None] * 7 for _ in range(140)])
+                frame.iat[3, 2] = datetime(2026, 1, 1)
+                frame.iloc[4, 2:7] = [
+                    datetime(2026, month, 1) for month in range(1, 6)
+                ]
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:7] = [
+                        95 + offset + line_offset + month / 10
+                        for month in range(1, 6)
+                    ]
+                frame.to_excel(
+                    writer, sheet_name=sheet_number, index=False, header=False
+                )
+
+        parsed = refresh_data.parse_rosstat_production_workbook(output.getvalue())
+        self.assertEqual(parsed["modes"]["mom"]["dates"][-1], "2026-05-31")
+        self.assertEqual(parsed["modes"]["mom"]["series"]["total"][-1], 95.5)
+        self.assertEqual(parsed["modes"]["yoy"]["series"]["mining"][-1], 97.5)
+        self.assertEqual(
+            parsed["modes"]["ytd_yoy"]["series"]["manufacturing"][-1],
+            99.5,
+        )
+
     def test_parse_road_freight_wide_workbook(self) -> None:
         output = io.BytesIO()
         pd.DataFrame(
@@ -657,6 +690,52 @@ class RefreshDataTests(unittest.TestCase):
                         return_value=expected,
                     ):
                         result = refresh_data.fetch_rosstat_road_freight()
+        self.assertEqual(result, expected)
+
+    def test_annual_road_page_workbook_cannot_mask_monthly_release(self) -> None:
+        monthly_url = (
+            "https://rosstat.gov.ru/storage/mediabank/PerevGruz_05-2026.xlsx"
+        )
+        annual_url = (
+            "https://rosstat.gov.ru/storage/mediabank/avto-perev_2025.xlsx"
+        )
+        expected = (["2026-05-31"], [560.5])
+
+        def parse(content: bytes) -> tuple[list[str], list[float | int]]:
+            if content == b"monthly workbook":
+                return expected
+            raise RuntimeError("месячный ряд не распознан")
+
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(
+                refresh_data,
+                "rosstat_monthly_workbook_candidates",
+                return_value=[monthly_url],
+            ):
+                with patch.object(
+                    refresh_data,
+                    "_rosstat_page_candidates",
+                    return_value=[(refresh_data.ROSSTAT_TRANSPORT_URL, "page")],
+                ):
+                    with patch.object(
+                        refresh_data,
+                        "discover_rosstat_xlsx_urls",
+                        return_value=[annual_url],
+                    ):
+                        with patch.object(
+                            refresh_data,
+                            "_download_official_workbook",
+                            side_effect=lambda url, attempts=1: (
+                                b"monthly workbook" if url == monthly_url else b"annual workbook"
+                            ),
+                        ):
+                            with patch.object(
+                                refresh_data,
+                                "parse_rosstat_road_workbook",
+                                side_effect=parse,
+                            ):
+                                result = refresh_data.fetch_rosstat_road_freight()
+
         self.assertEqual(result, expected)
 
     def test_downloaded_production_workbook_error_is_not_hidden_by_later_404(self) -> None:

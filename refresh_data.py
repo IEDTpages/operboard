@@ -1565,6 +1565,13 @@ def _parse_period_cell(value: Any) -> date | None:
 
 
 def _year_from_cell(value: Any) -> int | None:
+    # Rosstat sometimes stores a displayed year as a real Excel date with a
+    # ``yyyy`` number format.  pandas/openpyxl then returns datetime/date rather
+    # than the visible text ``2026``.
+    if isinstance(value, datetime):
+        value = value.date()
+    if isinstance(value, date):
+        return value.year if 1990 <= value.year <= date.today().year + 1 else None
     if (
         isinstance(value, (int, float))
         and not isinstance(value, bool)
@@ -1822,6 +1829,9 @@ def _rosstat_month_from_header(value: Any) -> int | None:
     """Read a Russian month label after removing Rosstat footnote markers."""
     if value is None or (isinstance(value, float) and math.isnan(value)):
         return None
+    # Month headings can also be genuine Excel dates formatted as ``mmmm``.
+    if isinstance(value, (datetime, date)):
+        return value.month
     text = _normalise_header(value)
     text = re.sub(r"[\u00b9\u00b2\u00b3\u2070-\u2079]", "", text)
     text = re.sub(r"\d+\s*\)?\s*$", "", text)
@@ -2205,6 +2215,15 @@ def _release_period_from_url(url: str) -> date | None:
 def fetch_rosstat_production_history() -> dict[str, Any]:
     override = os.environ.get("ROSSTAT_PRODUCTION_XLSX_URL", "").strip()
     candidates: list[str] = [override] if override else []
+    # Probe the stable official filename pattern before semantic page links.
+    # Rosstat pages can retain neighbouring/archival workbooks whose link text
+    # is similar but whose cell layout is unrelated to this indicator.
+    candidates.extend(
+        rosstat_monthly_workbook_candidates(
+            ROSSTAT_PRODUCTION_FILENAME_PREFIX,
+            confirmed_url=ROSSTAT_PRODUCTION_XLSX_CONFIRMED,
+        )
+    )
     page_error: Exception | None = None
     try:
         for page_url, html in _rosstat_page_candidates(ROSSTAT_INDUSTRIAL_URL):
@@ -2218,13 +2237,6 @@ def fetch_rosstat_production_history() -> dict[str, Any]:
             )
     except Exception as exc:  # noqa: BLE001 - direct official fallback remains
         page_error = exc
-    candidates.extend(
-        rosstat_monthly_workbook_candidates(
-            ROSSTAT_PRODUCTION_FILENAME_PREFIX,
-            confirmed_url=ROSSTAT_PRODUCTION_XLSX_CONFIRMED,
-        )
-    )
-
     download_errors: list[str] = []
     for url in dict.fromkeys(item for item in candidates if item):
         try:
@@ -2635,6 +2647,18 @@ def _monthly_road_rows_from_cumulative(
 def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
     override = os.environ.get("ROSSTAT_ROAD_XLSX_URL", "").strip()
     candidates: list[str] = [override] if override else []
+    # The transport page also links to ``avto-perev_2025.xlsx``.  That is a
+    # different two-sheet annual workbook; the monthly all-mode table requested
+    # here is the ``PerevGruz_MM-YYYY.xlsx`` series with sheet 4.  Put the exact
+    # official series ahead of semantic page matches so the annual workbook can
+    # never mask a valid current release.
+    candidates.extend(
+        rosstat_monthly_workbook_candidates(
+            ROSSTAT_ROAD_FILENAME_PREFIX,
+            confirmed_url=ROSSTAT_ROAD_XLSX_CONFIRMED,
+            lookback_months=18,
+        )
+    )
     page_error: Exception | None = None
     try:
         for page_url, html in _rosstat_page_candidates(ROSSTAT_TRANSPORT_URL):
@@ -2647,13 +2671,6 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
             )
     except Exception as exc:  # noqa: BLE001 - an explicit official URL may remain
         page_error = exc
-    candidates.extend(
-        rosstat_monthly_workbook_candidates(
-            ROSSTAT_ROAD_FILENAME_PREFIX,
-            confirmed_url=ROSSTAT_ROAD_XLSX_CONFIRMED,
-            lookback_months=18,
-        )
-    )
     candidates = list(dict.fromkeys(item for item in candidates if item))
     if not candidates:
         raise RuntimeError(
@@ -2691,10 +2708,14 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
 
         if release_period is None:
             filename = urlparse(url).path.rsplit("/", 1)[-1]
-            raise RuntimeError(
-                f"Росстат: {filename} скачан, но не распознан: {direct_error}; "
-                f"листы: {_workbook_layout_summary(content)}"
-            ) from direct_error
+            # A semantic page match without the monthly release suffix may be
+            # an adjacent annual table (notably avto-perev_2025.xlsx).  Record
+            # it and continue; do not let it hide the valid PerevGruz release.
+            download_errors.append(
+                f"{filename}: пропущен неподходящий формат; "
+                f"{direct_error}; листы: {_workbook_layout_summary(content)}"
+            )
+            continue
         try:
             kind, value = _road_release_value(content, release_period)
         except Exception as exc:  # noqa: BLE001 - stop: this is a real file, not a 404 probe
