@@ -1,4 +1,4 @@
-"""Prepare the bundled v7.4 fallback from official sources available at build time."""
+"""Prepare the bundled v7.5 fallback from official sources available at build time."""
 
 from __future__ import annotations
 

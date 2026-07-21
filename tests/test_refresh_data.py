@@ -3,9 +3,10 @@ from __future__ import annotations
 import io
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import requests
 
 import refresh_data
 
@@ -337,6 +338,61 @@ class RefreshDataTests(unittest.TestCase):
             preferred_context="базисный 2023 год",
         )
         self.assertTrue(urls[0].endswith("ind-baza_2023.xlsx"))
+
+    def test_rosstat_tls_certificate_failure_uses_restricted_fallback(self) -> None:
+        class Response:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            @staticmethod
+            def raise_for_status() -> None:
+                return None
+
+        fake_session = MagicMock()
+        fake_session.get.side_effect = [
+            requests.exceptions.SSLError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed"),
+            Response(),
+        ]
+        with patch.object(refresh_data, "SESSION", fake_session):
+            with patch.object(refresh_data, "_ROSSTAT_TLS_FALLBACK_ACTIVE", False):
+                with patch.dict(os.environ, {"ROSSTAT_TLS_FALLBACK": "1"}, clear=False):
+                    response = refresh_data.get(
+                        "https://rosstat.gov.ru/storage/mediabank/test.xlsx",
+                        attempts=1,
+                    )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(fake_session.get.call_count, 2)
+        self.assertIs(fake_session.get.call_args_list[1].kwargs["verify"], False)
+        self.assertIs(fake_session.get.call_args_list[1].kwargs["allow_redirects"], False)
+
+    def test_tls_fallback_is_not_used_for_other_hosts(self) -> None:
+        fake_session = MagicMock()
+        fake_session.get.side_effect = requests.exceptions.SSLError(
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed"
+        )
+        with patch.object(refresh_data, "SESSION", fake_session):
+            with patch.object(refresh_data, "_ROSSTAT_TLS_FALLBACK_ACTIVE", False):
+                with self.assertRaises(requests.exceptions.SSLError):
+                    refresh_data.get("https://example.com/data.xlsx", attempts=1)
+        self.assertEqual(fake_session.get.call_count, 1)
+
+    def test_rosstat_tls_fallback_rejects_external_redirect(self) -> None:
+        class RedirectResponse:
+            status_code = 302
+            headers = {"Location": "https://example.com/file.xlsx"}
+
+            @staticmethod
+            def close() -> None:
+                return None
+
+        fake_session = MagicMock()
+        fake_session.get.return_value = RedirectResponse()
+        with patch.object(refresh_data, "SESSION", fake_session):
+            with self.assertRaisesRegex(requests.exceptions.SSLError, "за пределы"):
+                refresh_data._rosstat_get_with_restricted_tls_fallback(
+                    "https://rosstat.gov.ru/storage/mediabank/test.xlsx"
+                )
+        self.assertEqual(fake_session.get.call_count, 1)
 
     def test_road_override_survives_unavailable_rosstat_page(self) -> None:
         expected = (["2026-05-31"], [555.5])

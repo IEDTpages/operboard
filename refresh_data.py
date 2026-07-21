@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -21,6 +22,7 @@ from urllib.parse import urljoin, urlparse
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from urllib3.exceptions import InsecureRequestWarning
 
 try:
     from playwright.sync_api import Browser, Page, sync_playwright
@@ -80,6 +82,14 @@ SESSION.headers.update(
     }
 )
 
+# rosstat.gov.ru occasionally serves an incomplete certificate chain. Browsers can
+# often repair it through AIA fetching, while OpenSSL/requests on GitHub runners
+# fails before any HTTP response is received. The fallback below is deliberately
+# narrow: it is activated only after CERTIFICATE_VERIFY_FAILED, accepts only
+# HTTPS URLs on rosstat.gov.ru (including its official subdomains), and validates
+# every redirect before following it.
+_ROSSTAT_TLS_FALLBACK_ACTIVE = False
+
 PROFINANCE: dict[str, str] = {
     "brent": "https://www.profinance.ru/charts/brent/lc91h",
     "urals": "https://www.profinance.ru/charts/urals_med/lc91h",
@@ -97,13 +107,106 @@ def log(message: str) -> None:
     print(message, flush=True)
 
 
+def _is_rosstat_https_url(url: str) -> bool:
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower()
+    return (
+        parsed.scheme == "https"
+        and (hostname == "rosstat.gov.ru" or hostname.endswith(".rosstat.gov.ru"))
+    )
+
+
+def _is_certificate_verification_error(exc: BaseException) -> bool:
+    current: BaseException | None = exc
+    for _ in range(8):
+        message = str(current).lower()
+        if "certificate_verify_failed" in message or "certificate verify failed" in message:
+            return True
+        current = current.__cause__ or current.__context__
+        if current is None:
+            break
+    return False
+
+
+def _rosstat_get_with_restricted_tls_fallback(
+    url: str, **kwargs: Any
+) -> requests.Response:
+    """GET Rosstat with CA verification disabled but redirects pinned to Rosstat."""
+    request_kwargs = dict(kwargs)
+    request_kwargs.pop("verify", None)
+    request_kwargs.pop("allow_redirects", None)
+    request_kwargs.pop("timeout", None)
+    current_url = url
+
+    for _ in range(6):
+        if not _is_rosstat_https_url(current_url):
+            raise requests.exceptions.SSLError(
+                "Росстат: небезопасное перенаправление TLS-fallback отклонено"
+            )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", InsecureRequestWarning)
+            response = SESSION.get(
+                current_url,
+                timeout=TIMEOUT_SECONDS,
+                verify=False,
+                allow_redirects=False,
+                **request_kwargs,
+            )
+        if response.status_code not in {301, 302, 303, 307, 308}:
+            return response
+        location = response.headers.get("Location", "").strip()
+        response.close()
+        if not location:
+            raise requests.exceptions.TooManyRedirects(
+                "Росстат: перенаправление без заголовка Location"
+            )
+        next_url = urljoin(current_url, location)
+        if not _is_rosstat_https_url(next_url):
+            raise requests.exceptions.SSLError(
+                "Росстат: перенаправление TLS-fallback за пределы rosstat.gov.ru отклонено"
+            )
+        current_url = next_url
+
+    raise requests.exceptions.TooManyRedirects(
+        "Росстат: превышено число перенаправлений TLS-fallback"
+    )
+
+
 def get(url: str, *, attempts: int = 3, **kwargs: Any) -> requests.Response:
+    global _ROSSTAT_TLS_FALLBACK_ACTIVE
     last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         try:
-            response = SESSION.get(url, timeout=TIMEOUT_SECONDS, **kwargs)
+            if _ROSSTAT_TLS_FALLBACK_ACTIVE and _is_rosstat_https_url(url):
+                response = _rosstat_get_with_restricted_tls_fallback(url, **kwargs)
+            else:
+                response = SESSION.get(url, timeout=TIMEOUT_SECONDS, **kwargs)
             response.raise_for_status()
             return response
+        except requests.exceptions.SSLError as exc:
+            fallback_allowed = (
+                os.environ.get("ROSSTAT_TLS_FALLBACK", "1").strip() != "0"
+            )
+            if (
+                fallback_allowed
+                and _is_rosstat_https_url(url)
+                and _is_certificate_verification_error(exc)
+            ):
+                _ROSSTAT_TLS_FALLBACK_ACTIVE = True
+                log(
+                    "Росстат: системная проверка цепочки сертификатов не прошла; "
+                    "включён ограниченный TLS-fallback только для rosstat.gov.ru"
+                )
+                try:
+                    response = _rosstat_get_with_restricted_tls_fallback(url, **kwargs)
+                    response.raise_for_status()
+                    return response
+                except Exception as fallback_exc:  # noqa: BLE001
+                    last_error = fallback_exc
+            else:
+                last_error = exc
+            if attempt < attempts:
+                time.sleep(attempt * 2)
         except Exception as exc:  # noqa: BLE001 - log precise external-source failure
             last_error = exc
             if attempt < attempts:
@@ -2403,7 +2506,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.4 moved both indicators to the public Rosstat workbooks. Source and
+    # v7.5 uses public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]
