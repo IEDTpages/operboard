@@ -1,6 +1,6 @@
 {
   "schema_version": 6,
-  "generated_at": "2026-07-21T09:02:37+00:00",
+  "generated_at": "2026-07-21T09:08:06+00:00",
   "data_as_of": "2026-07-21",
   "source_mode": "web_refresh",
   "report": {
@@ -14293,7 +14293,7 @@
         88.32,
         90.74,
         88.82,
-        88.8
+        88.62
       ]
     },
     "urals": {
@@ -17738,7 +17738,7 @@
         70.92,
         73.34,
         65.72,
-        69.14
+        68.91
       ]
     },
     "ttf": {
@@ -20647,7 +20647,7 @@
         694.83,
         711.8,
         688.6,
-        702.37
+        702.86
       ]
     },
     "ara": {
@@ -20854,7 +20854,7 @@
         118.9,
         121.35,
         120.3,
-        122.65
+        123
       ]
     },
     "lme": {
@@ -23761,7 +23761,7 @@
         3178.5,
         3167.5,
         3137.75,
-        3162.25
+        3162.75
       ]
     },
     "wheat": {
@@ -34279,16 +34279,16 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:08+00:00",
+      "updated_at": "2026-07-21T09:05:32+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:11+00:00",
+      "updated_at": "2026-07-21T09:05:34+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-13",
       "merged_latest": "2026-07-13",
@@ -34297,97 +34297,97 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:08+00:00",
+      "updated_at": "2026-07-21T09:05:33+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:09+00:00",
+      "updated_at": "2026-07-21T09:05:33+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:09+00:00",
+      "updated_at": "2026-07-21T09:05:33+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:05+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 3,
-      "changed_points": 4
+      "new_points": 0,
+      "changed_points": 1
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:05+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 3,
-      "changed_points": 4
+      "new_points": 0,
+      "changed_points": 1
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:05+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 3,
-      "changed_points": 4
+      "new_points": 0,
+      "changed_points": 1
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:05+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 3
+      "new_points": 0,
+      "changed_points": 1
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:05+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-21",
       "merged_latest": "2026-07-21",
-      "new_points": 2,
-      "changed_points": 3
+      "new_points": 0,
+      "changed_points": 1
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:20+00:00",
+      "updated_at": "2026-07-21T09:05:42+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:25+00:00",
+      "updated_at": "2026-07-21T09:05:45+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 2,
-      "changed_points": 2
+      "new_points": 0,
+      "changed_points": 0
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:02:37+00:00",
+      "updated_at": "2026-07-21T09:08:06+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-12",
       "merged_latest": "2026-07-12",
@@ -34395,17 +34395,15 @@
       "changed_points": 0
     },
     "production_index": {
-      "state": "seed",
-      "updated_at": "2026-07-20T15:41:56+00:00",
-      "message": "Ретроспектива импортирована из выгрузки ЕМИСС; регулярное обновление настроено из таблиц Росстата",
-      "fetched_latest": "2025-12-31",
-      "merged_latest": "2025-12-31",
-      "new_points": 324,
-      "changed_points": 324
+      "state": "stale",
+      "updated_at": "2026-07-21T09:05:55+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. Росстат: ind_baza_2023_05-2026.xlsx скачан, но не распознан: Росстат: на листе '1' ИПП не прочитаны строки total, mining, manufacturing; листы: 'Содержание'=12x2, '1'=140x7, '2'=140x7, '3'=140x7",
+      "last_success_at": "2026-07-20T15:41:56+00:00",
+      "merged_latest": "2025-12-31"
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:26+00:00",
+      "updated_at": "2026-07-21T09:05:55+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -34414,7 +34412,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:26+00:00",
+      "updated_at": "2026-07-21T09:05:55+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -34422,31 +34420,32 @@
       "changed_points": 0
     },
     "road_freight": {
-      "state": "seed",
-      "updated_at": "2026-07-20T15:41:56+00:00",
-      "message": "Ретроспектива импортирована из выгрузки ЕМИСС; регулярное обновление настроено из таблиц Росстата",
-      "fetched_latest": "2025-12-31",
-      "merged_latest": "2025-12-31",
-      "new_points": 60,
-      "changed_points": 60
+      "state": "stale",
+      "updated_at": "2026-07-21T09:05:51+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. Росстат: avto-perev_2025.xlsx скачан, но не распознан: Росстат: месячный ряд автоперевозок в книге не распознан; листы: 'Содержание'=11x2, '1'=105x27, '2'=103x17",
+      "last_success_at": "2026-07-20T15:41:56+00:00",
+      "merged_latest": "2025-12-31"
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-21T09:00:12+00:00",
+      "updated_at": "2026-07-21T09:05:35+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
-      "new_points": 593,
-      "changed_points": 593
+      "new_points": 0,
+      "changed_points": 0
     }
   },
   "refresh_summary": {
     "successes": 16,
-    "failures": 0,
-    "skipped": 2,
+    "failures": 2,
+    "skipped": 0,
     "total": 18,
-    "actual_changed_points": 623,
-    "updated_at": "2026-07-21T09:02:37+00:00",
-    "failed_sources": {}
+    "actual_changed_points": 5,
+    "updated_at": "2026-07-21T09:08:06+00:00",
+    "failed_sources": {
+      "road_freight": "Росстат: avto-perev_2025.xlsx скачан, но не распознан: Росстат: месячный ряд автоперевозок в книге не распознан; листы: 'Содержание'=11x2, '1'=105x27, '2'=103x17",
+      "production_index": "Росстат: ind_baza_2023_05-2026.xlsx скачан, но не распознан: Росстат: на листе '1' ИПП не прочитаны строки total, mining, manufacturing; листы: 'Содержание'=12x2, '1'=140x7, '2'=140x7, '3'=140x7"
+    }
   }
 }
