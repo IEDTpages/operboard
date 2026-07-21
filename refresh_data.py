@@ -1805,9 +1805,126 @@ def _validate_production_modes(
                 )
 
 
+def _workbook_sheet_name(workbook: pd.ExcelFile, expected: str) -> str | None:
+    """Resolve Rosstat's numeric sheet names without relying on their position."""
+    expected_text = str(expected).strip()
+    return next(
+        (
+            sheet_name
+            for sheet_name in workbook.sheet_names
+            if str(sheet_name).strip() == expected_text
+        ),
+        None,
+    )
+
+
+def _rosstat_month_from_header(value: Any) -> int | None:
+    """Read a Russian month label after removing Rosstat footnote markers."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    text = _normalise_header(value)
+    text = re.sub(r"[\u00b9\u00b2\u00b3\u2070-\u2079]", "", text)
+    text = re.sub(r"\d+\s*\)?\s*$", "", text)
+    for token in re.findall(r"[а-яё]+", text):
+        month = _month_number(token)
+        if month:
+            return month
+    return None
+
+
+def _parse_rosstat_production_fixed_layout(
+    workbook: pd.ExcelFile,
+) -> dict[str, Any] | None:
+    """Read the current official IPI layout by its documented Excel cells.
+
+    Sheets 1/2/3 correspond to month-on-month, year-on-year and cumulative
+    year-on-year indices.  Excel row 4 contains years, row 5 contains months,
+    and rows 6, 7 and 21 contain the three dashboard series.
+    """
+    sheet_by_mode = {"mom": "1", "yoy": "2", "ytd_yoy": "3"}
+    resolved = {
+        mode: _workbook_sheet_name(workbook, sheet_name)
+        for mode, sheet_name in sheet_by_mode.items()
+    }
+    if not all(resolved.values()):
+        return None
+
+    line_rows = {"total": 5, "mining": 6, "manufacturing": 20}
+    modes: dict[str, Any] = {}
+    for mode, sheet_name in resolved.items():
+        assert sheet_name is not None
+        frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+        if len(frame) <= max(line_rows.values()) or len(frame.columns) <= 2:
+            raise RuntimeError(
+                f"Росстат: лист {sheet_name!r} ИПП меньше ожидаемого диапазона C4:C21"
+            )
+
+        grouped = {line: [] for line in PRODUCTION_LINES}
+        carried_year: int | None = None
+        for column_index in range(2, len(frame.columns)):
+            explicit_year = _year_from_cell(frame.iat[3, column_index])
+            if explicit_year is not None:
+                carried_year = explicit_year
+            month = _rosstat_month_from_header(frame.iat[4, column_index])
+            if carried_year is None or month is None:
+                continue
+            period = date(
+                carried_year,
+                month,
+                calendar.monthrange(carried_year, month)[1],
+            )
+            if period < START_DATE:
+                continue
+            for line, row_index in line_rows.items():
+                number = to_number(frame.iat[row_index, column_index])
+                if number is not None and 40 <= number <= 180:
+                    grouped[line].append((period, number))
+
+        line_maps: dict[str, dict[str, float | int]] = {}
+        missing: list[str] = []
+        for line in PRODUCTION_LINES:
+            dates, values = pack_series(grouped[line])
+            line_maps[line] = dict(zip(dates, values, strict=True))
+            if not dates:
+                missing.append(line)
+        if missing:
+            raise RuntimeError(
+                f"Росстат: на листе {sheet_name!r} ИПП не прочитаны строки "
+                + ", ".join(missing)
+            )
+        common_dates = sorted(
+            set.intersection(*(set(values) for values in line_maps.values()))
+        )
+        if not common_dates:
+            raise RuntimeError(
+                f"Росстат: на листе {sheet_name!r} у строк 6, 7 и 21 нет общих месяцев"
+            )
+        modes[mode] = {
+            "label": PRODUCTION_MODES[mode],
+            "dates": common_dates,
+            "series": {
+                line: [line_maps[line][item] for item in common_dates]
+                for line in PRODUCTION_LINES
+            },
+        }
+
+    result = {
+        "default_mode": "mom",
+        "mode_labels": PRODUCTION_MODES,
+        "series_labels": PRODUCTION_LINES,
+        "modes": modes,
+    }
+    _validate_production_modes(result, "Росстат — ИПП", minimum_months=1)
+    return result
+
+
 def parse_rosstat_production_workbook(content: bytes) -> dict[str, Any]:
     """Extract three activities and three comparison modes from Rosstat XLS/XLSX."""
     workbook = pd.ExcelFile(io.BytesIO(content))
+    fixed_layout = _parse_rosstat_production_fixed_layout(workbook)
+    if fixed_layout is not None:
+        return fixed_layout
+
     grouped: dict[str, dict[str, list[tuple[date, float]]]] = {
         mode: {line: [] for line in PRODUCTION_LINES} for mode in PRODUCTION_MODES
     }
@@ -2182,9 +2299,64 @@ def _month_only_from_cell(value: Any) -> int | None:
     return _month_from_cell(value)
 
 
+def _parse_rosstat_road_fixed_layout(
+    workbook: pd.ExcelFile,
+) -> tuple[list[str], list[float | int]] | None:
+    """Read road freight from sheet 4 and the official C4:N34 range."""
+    sheet_name = _workbook_sheet_name(workbook, "4")
+    if sheet_name is None:
+        return None
+    frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+    if len(frame) < 34 or len(frame.columns) < 14:
+        raise RuntimeError(
+            "Росстат: лист '4' автоперевозок меньше ожидаемого диапазона B4:N34"
+        )
+
+    months = {
+        column_index: month
+        for column_index in range(2, 14)
+        if (month := _rosstat_month_from_header(frame.iat[3, column_index]))
+        is not None
+    }
+    if len(months) < 10:
+        raise RuntimeError(
+            "Росстат: на листе '4' в C4:N4 распознано менее 10 месяцев"
+        )
+
+    rows: list[tuple[date, float]] = []
+    for row_index in range(31, 34):
+        year = _year_from_cell(frame.iat[row_index, 1])
+        if year is None:
+            continue
+        for column_index, month in months.items():
+            number = to_number(frame.iat[row_index, column_index])
+            if number is None or number <= 0:
+                continue
+            period = date(year, month, calendar.monthrange(year, month)[1])
+            if period >= START_DATE:
+                rows.append((period, number))
+
+    if not rows:
+        raise RuntimeError(
+            "Росстат: на листе '4' не прочитаны автоперевозки из C32:N34"
+        )
+    rows = _road_sheet_scale(rows)
+    dates, values = pack_series(rows)
+    validate_numeric_series(dates, values, "Росстат — автоперевозки")
+    if any(not 0 < float(value) < 5000 for value in values):
+        raise RuntimeError(
+            "Росстат: неправдоподобное значение автоперевозок в C32:N34"
+        )
+    return dates, values
+
+
 def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float | int]]:
     """Extract the monthly national road-freight series from Rosstat XLS/XLSX."""
     workbook = pd.ExcelFile(io.BytesIO(content))
+    fixed_layout = _parse_rosstat_road_fixed_layout(workbook)
+    if fixed_layout is not None:
+        return fixed_layout
+
     row_candidates: list[tuple[int, list[tuple[date, float]]]] = []
 
     for sheet_name in workbook.sheet_names:
@@ -3112,7 +3284,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.7 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
+    # v7.8 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]

@@ -264,6 +264,51 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(status["merged_latest"], "2026-05-31")
         self.assertIn("сохранены последние", status["message"])
 
+    def test_rosstat_road_merge_keeps_emiss_history(self) -> None:
+        existing = {"dates": ["2025-12-31"], "values": [536.6]}
+        merged = refresh_data.merge_numeric_series(
+            existing,
+            ["2026-01-31", "2026-05-31"],
+            [470.2, 560.5],
+        )
+        self.assertEqual(
+            merged["dates"],
+            ["2025-12-31", "2026-01-31", "2026-05-31"],
+        )
+        self.assertEqual(merged["values"], [536.6, 470.2, 560.5])
+
+    def test_rosstat_production_merge_keeps_emiss_history(self) -> None:
+        def block(period: str, total: float, mining: float, manufacturing: float) -> dict:
+            return {
+                "dates": [period],
+                "series": {
+                    "total": [total],
+                    "mining": [mining],
+                    "manufacturing": [manufacturing],
+                },
+            }
+
+        existing = {
+            "default_mode": "mom",
+            "modes": {
+                mode: block("2025-12-31", 119, 105.6, 126.6)
+                for mode in refresh_data.PRODUCTION_MODES
+            },
+        }
+        fetched = {
+            "default_mode": "mom",
+            "modes": {
+                mode: block("2026-05-31", 100.5, 101.5, 102.5)
+                for mode in refresh_data.PRODUCTION_MODES
+            },
+        }
+        merged = refresh_data.merge_production_series(existing, fetched)
+        for mode in refresh_data.PRODUCTION_MODES:
+            self.assertEqual(
+                merged["modes"][mode]["dates"],
+                ["2025-12-31", "2026-05-31"],
+            )
+
     def test_extract_monthly_production_index(self) -> None:
         point = refresh_data._extract_production_point(
             "Индекс промышленного производства в мае 2026 года по сравнению "
@@ -340,6 +385,44 @@ class RefreshDataTests(unittest.TestCase):
             [106, 109, 112],
         )
 
+    def test_parse_rosstat_production_official_cell_layout(self) -> None:
+        output = io.BytesIO()
+        months = [
+            "январь¹", "февраль¹", "март¹", "апрель¹", "май¹", "июнь¹",
+            "июль¹", "август¹", "сентябрь¹", "октябрь¹", "ноябрь¹", "декабрь¹",
+        ]
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame([["Содержание"]]).to_excel(
+                writer, sheet_name="Содержание", index=False, header=False
+            )
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                frame = pd.DataFrame([[None] * 19 for _ in range(21)])
+                frame.iat[3, 2] = 2025
+                frame.iat[3, 14] = 2026
+                frame.iloc[4, 2:14] = months
+                frame.iloc[4, 14:19] = months[:5]
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:14] = [
+                        90 + offset + line_offset + month / 10
+                        for month in range(1, 13)
+                    ]
+                    frame.iloc[row_index, 14:19] = [
+                        100 + offset + line_offset + month / 10
+                        for month in range(1, 6)
+                    ]
+                frame.to_excel(
+                    writer, sheet_name=sheet_number, index=False, header=False
+                )
+
+        parsed = refresh_data.parse_rosstat_production_workbook(output.getvalue())
+        self.assertEqual(parsed["modes"]["mom"]["dates"][-1], "2026-05-31")
+        self.assertEqual(parsed["modes"]["mom"]["series"]["total"][-1], 100.5)
+        self.assertEqual(parsed["modes"]["yoy"]["series"]["mining"][-1], 102.5)
+        self.assertEqual(
+            parsed["modes"]["ytd_yoy"]["series"]["manufacturing"][-1],
+            104.5,
+        )
+
     def test_parse_road_freight_wide_workbook(self) -> None:
         output = io.BytesIO()
         pd.DataFrame(
@@ -396,6 +479,30 @@ class RefreshDataTests(unittest.TestCase):
             ],
         )
         self.assertEqual(values, [459.1, 477.3, 529.8, 470.2, 482.4, 535.6])
+
+    def test_parse_road_freight_official_sheet_4_cells(self) -> None:
+        output = io.BytesIO()
+        frame = pd.DataFrame([[None] * 14 for _ in range(34)])
+        frame.iloc[3, 2:14] = [
+            "январь", "февраль", "март", "апрель", "май¹", "июнь",
+            "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+        ]
+        frame.iat[31, 1] = 2024
+        frame.iat[32, 1] = 2025
+        frame.iat[33, 1] = 2026
+        frame.iloc[31, 2:14] = [450 + month for month in range(1, 13)]
+        frame.iloc[32, 2:14] = [500 + month for month in range(1, 13)]
+        frame.iloc[33, 2:7] = [470.2, 482.4, 535.6, 542.7, 560.5]
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame([["Содержание"]]).to_excel(
+                writer, sheet_name="Содержание", index=False, header=False
+            )
+            frame.to_excel(writer, sheet_name="4", index=False, header=False)
+
+        dates, values = refresh_data.parse_rosstat_road_workbook(output.getvalue())
+        self.assertEqual(dates[-1], "2026-05-31")
+        self.assertEqual(values[-1], 560.5)
+        self.assertEqual(values[dates.index("2026-04-30")], 542.7)
 
     def test_parse_road_cumulative_release_and_derive_month(self) -> None:
         def release(label: str, value: float) -> bytes:
