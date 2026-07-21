@@ -325,6 +325,7 @@ def parse_date(value: Any) -> date | None:
         "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y",
         "%d.%m.%y", "%d/%m/%y", "%d-%m-%y",
         "%m/%d/%Y", "%m/%d/%y", "%Y%m%d",
+        "%m %d %Y", "%m %d %y", "%d %m %Y", "%d %m %y",
     )
     candidates = [text, text[:10], text[:8]]
     for candidate in candidates:
@@ -333,11 +334,11 @@ def parse_date(value: Any) -> date | None:
                 return datetime.strptime(candidate, fmt).date()
             except ValueError:
                 pass
-    try:
-        parsed = pd.to_datetime(text, dayfirst=True, errors="raise")
-        return parsed.date()
-    except Exception:  # noqa: BLE001
-        return None
+    # Avoid pandas' deliberately permissive date parser here.  Besides producing
+    # locale-dependent results, it emits dozens of warnings for ordinary Excel
+    # labels such as ``1 2 2026`` on GitHub runners.  Every date format used by
+    # the dashboard and the Rosstat workbooks is handled explicitly above.
+    return None
 
 
 def normalise_number(number: float) -> float | int:
@@ -1574,7 +1575,10 @@ def _year_from_cell(value: Any) -> int | None:
         return int(value)
     text = _normalise_header(value)
     match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*г\.?)?", text)
-    return int(match.group(1)) if match else None
+    if not match:
+        return None
+    year = int(match.group(1))
+    return year if 1990 <= year <= date.today().year + 1 else None
 
 
 def _month_from_cell(value: Any) -> int | None:
@@ -1668,13 +1672,130 @@ def _unique_production_line(values: list[Any]) -> str | None:
     return next(iter(found)) if len(found) == 1 else None
 
 
-def _validate_production_modes(result: dict[str, Any], source: str) -> None:
+def _month_period_from_cell(
+    value: Any, *, default_year: int | None = None
+) -> date | None:
+    """Read a month (or the final month of a cumulative period) from one cell."""
+    if isinstance(value, (datetime, date)):
+        parsed = value.date() if isinstance(value, datetime) else value
+        return date(parsed.year, parsed.month, calendar.monthrange(parsed.year, parsed.month)[1])
+    text = _normalise_header(value)
+    if not text or text == "nan":
+        return None
+    years = [int(item) for item in re.findall(r"(?<!\d)(20\d{2})(?!\d)", text)]
+    year = years[-1] if years else default_year
+    month_words = re.findall(r"[а-я]+", text)
+    months = [month for word in month_words if (month := _month_number(word))]
+    if not months or not year:
+        return None
+    month = months[-1]
+    return date(year, month, calendar.monthrange(year, month)[1])
+
+
+def _nearest_production_tag(
+    frame: pd.DataFrame,
+    row_index: int,
+    column_index: int,
+    detector: Any,
+    sheet_name: str,
+) -> str | None:
+    """Find the closest activity/mode label around a numeric Excel cell."""
+    candidates: list[tuple[int, str]] = []
+    for current_column, value in enumerate(frame.iloc[row_index]):
+        tag = detector(value)
+        if tag:
+            candidates.append((abs(current_column - column_index), tag))
+    for current_row in range(max(0, row_index - 45), row_index):
+        for current_column in range(max(0, column_index - 6), min(len(frame.columns), column_index + 7)):
+            tag = detector(frame.iat[current_row, current_column])
+            if tag:
+                distance = (row_index - current_row) * 2 + abs(current_column - column_index)
+                candidates.append((distance, tag))
+    sheet_tag = detector(sheet_name)
+    if sheet_tag:
+        candidates.append((10_000, sheet_tag))
+    return min(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def _production_period_for_cell(
+    frame: pd.DataFrame, row_index: int, column_index: int
+) -> date | None:
+    """Resolve a month for both horizontal and vertical Rosstat table layouts."""
+    candidates: list[tuple[int, date]] = []
+
+    # Explicit month+year labels in the same row or above the value.
+    for current_column, value in enumerate(frame.iloc[row_index]):
+        period = _month_period_from_cell(value)
+        if period:
+            candidates.append((abs(current_column - column_index), period))
+    for current_row in range(max(0, row_index - 45), row_index):
+        period = _month_period_from_cell(frame.iat[current_row, column_index])
+        if period:
+            candidates.append(((row_index - current_row) * 2, period))
+
+    # Common vertical layout: month in the row and year in the column header.
+    row_months = [
+        (abs(current_column - column_index), _month_from_cell(value))
+        for current_column, value in enumerate(frame.iloc[row_index])
+        if _month_from_cell(value)
+    ]
+    column_years = [
+        (row_index - current_row, _year_from_cell(frame.iat[current_row, column_index]))
+        for current_row in range(max(0, row_index - 45), row_index)
+        if _year_from_cell(frame.iat[current_row, column_index])
+    ]
+    if row_months and column_years:
+        month_distance, month = min(row_months, key=lambda item: item[0])
+        year_distance, year = min(column_years, key=lambda item: item[0])
+        assert month and year
+        candidates.append(
+            (
+                month_distance + year_distance,
+                date(year, month, calendar.monthrange(year, month)[1]),
+            )
+        )
+
+    # Common horizontal layout: month in the column and a merged year above it.
+    column_months = [
+        (row_index - current_row, _month_from_cell(frame.iat[current_row, column_index]))
+        for current_row in range(max(0, row_index - 45), row_index)
+        if _month_from_cell(frame.iat[current_row, column_index])
+    ]
+    if column_months:
+        month_distance, month = min(column_months, key=lambda item: item[0])
+        years: list[tuple[int, int]] = []
+        for current_row in range(max(0, row_index - 45), row_index):
+            carried_year: int | None = None
+            for current_column, value in enumerate(frame.iloc[current_row]):
+                if explicit_year := _year_from_cell(value):
+                    carried_year = explicit_year
+                if current_column == column_index and carried_year:
+                    years.append((row_index - current_row, carried_year))
+                    break
+        if years:
+            year_distance, year = min(years, key=lambda item: item[0])
+            assert month
+            candidates.append(
+                (
+                    month_distance + year_distance,
+                    date(year, month, calendar.monthrange(year, month)[1]),
+                )
+            )
+
+    return min(candidates, key=lambda item: item[0])[1] if candidates else None
+
+
+def _validate_production_modes(
+    result: dict[str, Any], source: str, *, minimum_months: int = 1
+) -> None:
     for mode in PRODUCTION_MODES:
         block = result.get("modes", {}).get(mode, {})
         dates = block.get("dates") or []
         lines = block.get("series") or {}
-        if len(dates) < 3:
-            raise RuntimeError(f"{source}: режим {mode} содержит менее трёх месяцев")
+        if len(dates) < minimum_months:
+            raise RuntimeError(
+                f"{source}: режим {mode} содержит менее {minimum_months} мес."
+            )
         for line in PRODUCTION_LINES:
             values = lines.get(line) or []
             validate_numeric_series(dates, values, f"{source} — {mode}/{line}")
@@ -1736,6 +1857,35 @@ def parse_rosstat_production_workbook(content: bytes) -> dict[str, Any]:
                 if len(points) >= 3:
                     grouped[mode][line].extend(points)
 
+        # Real Rosstat releases also use the inverse layout: months down the
+        # rows and years / activities / comparison modes across columns.  Scan
+        # numeric cells by their nearest semantic headers instead of assuming a
+        # fixed sheet or cell address.
+        for row_index in range(len(frame)):
+            for column_index in range(len(frame.columns)):
+                number = to_number(frame.iat[row_index, column_index])
+                if number is None or not 40 <= number <= 180:
+                    continue
+                period = _production_period_for_cell(frame, row_index, column_index)
+                if not period or period < START_DATE:
+                    continue
+                mode = _nearest_production_tag(
+                    frame,
+                    row_index,
+                    column_index,
+                    _production_mode_from_text,
+                    sheet_name,
+                )
+                line = _nearest_production_tag(
+                    frame,
+                    row_index,
+                    column_index,
+                    _production_activity_from_text,
+                    sheet_name,
+                )
+                if mode in PRODUCTION_MODES and line in PRODUCTION_LINES:
+                    grouped[mode][line].append((period, number))
+
     modes: dict[str, Any] = {}
     missing: list[str] = []
     for mode, label in PRODUCTION_MODES.items():
@@ -1768,7 +1918,7 @@ def parse_rosstat_production_workbook(content: bytes) -> dict[str, Any]:
         "series_labels": PRODUCTION_LINES,
         "modes": modes,
     }
-    _validate_production_modes(result, "Росстат — ИПП")
+    _validate_production_modes(result, "Росстат — ИПП", minimum_months=1)
     return result
 
 
@@ -1911,6 +2061,30 @@ def _download_official_workbook(url: str, *, attempts: int = 2) -> bytes:
     return content
 
 
+def _workbook_layout_summary(content: bytes) -> str:
+    """Return a compact, non-sensitive layout hint for actionable CI errors."""
+    try:
+        workbook = pd.ExcelFile(io.BytesIO(content))
+        parts: list[str] = []
+        for sheet_name in workbook.sheet_names[:8]:
+            frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+            parts.append(f"{sheet_name!r}={len(frame)}x{len(frame.columns)}")
+        return ", ".join(parts) or "нет непустых листов"
+    except Exception as exc:  # noqa: BLE001
+        return f"структура не прочитана: {exc}"
+
+
+def _release_period_from_url(url: str) -> date | None:
+    filename = urlparse(url).path.rsplit("/", 1)[-1]
+    match = re.search(r"_(\d{2})-(20\d{2})\.xlsx?$", filename, re.IGNORECASE)
+    if not match:
+        return None
+    month, year = int(match.group(1)), int(match.group(2))
+    if not 1 <= month <= 12:
+        return None
+    return date(year, month, calendar.monthrange(year, month)[1])
+
+
 def fetch_rosstat_production_history() -> dict[str, Any]:
     override = os.environ.get("ROSSTAT_PRODUCTION_XLSX_URL", "").strip()
     candidates: list[str] = [override] if override else []
@@ -1934,15 +2108,25 @@ def fetch_rosstat_production_history() -> dict[str, Any]:
         )
     )
 
-    last_error: Exception | None = page_error
+    download_errors: list[str] = []
     for url in dict.fromkeys(item for item in candidates if item):
         try:
-            return parse_rosstat_production_workbook(
-                _download_official_workbook(url, attempts=1)
-            )
-        except Exception as exc:  # noqa: BLE001 - try another official workbook
-            last_error = exc
-    raise RuntimeError(f"Росстат: книга ИПП не обработана: {last_error}")
+            content = _download_official_workbook(url, attempts=1)
+        except Exception as exc:  # noqa: BLE001 - a guessed release can be absent
+            download_errors.append(f"{urlparse(url).path.rsplit('/', 1)[-1]}: {exc}")
+            continue
+        try:
+            return parse_rosstat_production_workbook(content)
+        except Exception as exc:  # noqa: BLE001 - do not hide a real workbook error with later 404s
+            filename = urlparse(url).path.rsplit("/", 1)[-1]
+            raise RuntimeError(
+                f"Росстат: {filename} скачан, но не распознан: {exc}; "
+                f"листы: {_workbook_layout_summary(content)}"
+            ) from exc
+    details = "; ".join(download_errors[-6:])
+    if page_error:
+        details = f"страница: {page_error}; {details}" if details else str(page_error)
+    raise RuntimeError(f"Росстат: ни одна книга ИПП не скачана: {details}")
 
 
 def _road_sheet_scale(points: list[tuple[date, float]]) -> list[tuple[date, float]]:
@@ -2112,6 +2296,170 @@ def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float |
     return dates, values
 
 
+def _strict_excel_number(value: Any) -> float | None:
+    """Accept numeric Excel cells without extracting years embedded in labels."""
+    if isinstance(value, str):
+        numeric_text = value.strip().replace("\xa0", "").replace(" ", "")
+        if not re.fullmatch(r"[+-]?\d+(?:[.,]\d+)?", numeric_text):
+            return None
+    return to_number(value)
+
+
+def _road_release_value(
+    content: bytes, release_period: date
+) -> tuple[str, float | int]:
+    """Read one Rosstat release, including its usual cumulative Jan–month value."""
+    workbook = pd.ExcelFile(io.BytesIO(content))
+    ranked: list[tuple[int, str, float, str]] = []
+
+    for sheet_name in workbook.sheet_names:
+        frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+        if frame.empty:
+            continue
+        sheet_text = " ".join(
+            _normalise_header(value) for value in frame.to_numpy().ravel()
+        )
+        if not (
+            "автомоб" in sheet_text
+            and ("перевез" in sheet_text or "перевоз" in sheet_text)
+            and "груз" in sheet_text
+        ):
+            continue
+
+        for row_index in range(len(frame)):
+            row = frame.iloc[row_index]
+            row_text = " ".join(
+                _normalise_header(value)
+                for value in row
+                if pd.notna(value) and _strict_excel_number(value) is None
+            )
+            row_years = {
+                year for value in row if (year := _year_from_cell(value)) is not None
+            }
+            for column_index, raw_value in enumerate(row):
+                number = _strict_excel_number(raw_value)
+                if number is None or number <= 0 or number >= 5_000_000:
+                    continue
+                if float(number).is_integer() and int(number) in row_years:
+                    continue
+
+                column_values = [
+                    frame.iat[current_row, column_index]
+                    for current_row in range(max(0, row_index - 25), row_index + 1)
+                ]
+                column_text = " ".join(
+                    _normalise_header(value)
+                    for value in column_values
+                    if pd.notna(value) and _strict_excel_number(value) is None
+                )
+                nearby_values = frame.iloc[
+                    max(0, row_index - 10) : row_index + 1,
+                    max(0, column_index - 5) : min(len(frame.columns), column_index + 6),
+                ].to_numpy().ravel()
+                nearby_text = " ".join(
+                    _normalise_header(value)
+                    for value in nearby_values
+                    if pd.notna(value) and _strict_excel_number(value) is None
+                )
+
+                bad_context = " ".join((row_text, column_text))
+                if any(
+                    token in bad_context
+                    for token in (
+                        "грузооборот", "тонно-килом", "ткм", "пассаж",
+                        "темп роста", "в процентах", "% к", "индекс",
+                    )
+                ):
+                    continue
+
+                period_cells = [*row.tolist(), *column_values]
+                explicit_periods = [
+                    (value, period)
+                    for value in period_cells
+                    if (period := _month_period_from_cell(value)) is not None
+                    and period.year == release_period.year
+                    and period.month == release_period.month
+                ]
+                has_release_year = (
+                    release_period.year in row_years
+                    or str(release_period.year) in nearby_text
+                )
+                if not explicit_periods and not has_release_year:
+                    continue
+
+                cumulative = any(
+                    _is_cumulative_month_text(value)
+                    for value, _ in explicit_periods
+                )
+                if not explicit_periods and release_period.month > 1:
+                    # The central table "since 2000" normally labels the latest
+                    # row by year while the cumulative period sits in a merged
+                    # heading.  The filename supplies the unambiguous end month.
+                    cumulative = True
+                kind = "cumulative" if cumulative else "monthly"
+
+                local_unit_context = " ".join((column_text, nearby_text))
+                unit_context = " ".join((local_unit_context, sheet_text[:4000]))
+                scaled = float(number)
+                if "тыс" in local_unit_context and "тон" in local_unit_context:
+                    scaled /= 1000.0
+                elif scaled > 100_000:
+                    scaled /= 1000.0
+                if not 0 < scaled < 20_000:
+                    continue
+
+                score = 0
+                score += 160 if explicit_periods else 70
+                score += 80 if release_period.year in row_years else 0
+                score += 70 if "тон" in unit_context else 0
+                score += 50 if "перевез" in nearby_text else 0
+                score += 30 if "автомоб" in nearby_text else 0
+                score += 70 if scaled > 180 else -80
+                score += 20 if cumulative else 0
+                ranked.append(
+                    (score, kind, scaled, f"{sheet_name}!R{row_index + 1}C{column_index + 1}")
+                )
+
+    if not ranked:
+        raise RuntimeError(
+            "не найдено значение перевозок для периода "
+            f"{release_period.strftime('%m-%Y')}"
+        )
+    score, kind, value, _ = max(ranked, key=lambda item: item[0])
+    if score < 100:
+        raise RuntimeError(
+            "найдены только неоднозначные числовые ячейки для периода "
+            f"{release_period.strftime('%m-%Y')}"
+        )
+    return kind, normalise_number(value)
+
+
+def _monthly_road_rows_from_cumulative(
+    cumulative: dict[date, float | int]
+) -> list[tuple[date, float]]:
+    output: list[tuple[date, float]] = []
+    for period in sorted(cumulative):
+        current = float(cumulative[period])
+        if period.month == 1:
+            monthly = current
+        else:
+            previous_month = date(
+                period.year,
+                period.month - 1,
+                calendar.monthrange(period.year, period.month - 1)[1],
+            )
+            if previous_month not in cumulative:
+                continue
+            monthly = current - float(cumulative[previous_month])
+        if not 0 < monthly < 5000:
+            raise RuntimeError(
+                "Росстат: разность накопленных итогов дала неправдоподобное "
+                f"значение за {period.strftime('%m-%Y')}: {monthly:g} млн т"
+            )
+        output.append((period, monthly))
+    return output
+
+
 def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
     override = os.environ.get("ROSSTAT_ROAD_XLSX_URL", "").strip()
     candidates: list[str] = [override] if override else []
@@ -2131,6 +2479,7 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
         rosstat_monthly_workbook_candidates(
             ROSSTAT_ROAD_FILENAME_PREFIX,
             confirmed_url=ROSSTAT_ROAD_XLSX_CONFIRMED,
+            lookback_months=18,
         )
     )
     candidates = list(dict.fromkeys(item for item in candidates if item))
@@ -2139,15 +2488,70 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
             "Росстат: ссылка «Перевезено грузов автомобильным транспортом» не найдена; "
             f"{page_error}"
         )
-    last_error: Exception | None = page_error
-    for url in candidates[:16]:
+    download_errors: list[str] = []
+    monthly_rows: list[tuple[date, float]] = []
+    cumulative: dict[date, float | int] = {}
+    first_downloaded_url: str | None = None
+    for url in candidates[:24]:
+        release_period = _release_period_from_url(url)
         try:
-            return parse_rosstat_road_workbook(
-                _download_official_workbook(url, attempts=1)
+            content = _download_official_workbook(url, attempts=1)
+        except Exception as exc:  # noqa: BLE001 - guessed future/monthly release may be absent
+            download_errors.append(f"{urlparse(url).path.rsplit('/', 1)[-1]}: {exc}")
+            continue
+        first_downloaded_url = first_downloaded_url or url
+
+        # Some workbooks expose real monthly columns.  Prefer those when they
+        # are present; otherwise read the cumulative Jan–month point and derive
+        # the month from adjacent official releases.
+        direct_error: Exception | None = None
+        try:
+            dates, values = parse_rosstat_road_workbook(content)
+            monthly_rows.extend(
+                (parse_date(item_date), float(value))
+                for item_date, value in zip(dates, values, strict=True)
+                if parse_date(item_date) is not None
             )
-        except Exception as exc:  # noqa: BLE001 - try alternate current/historical workbook
-            last_error = exc
-    raise RuntimeError(f"Росстат: файл автоперевозок не обработан: {last_error}")
+            if dates:
+                continue
+        except Exception as exc:  # noqa: BLE001
+            direct_error = exc
+
+        if release_period is None:
+            filename = urlparse(url).path.rsplit("/", 1)[-1]
+            raise RuntimeError(
+                f"Росстат: {filename} скачан, но не распознан: {direct_error}; "
+                f"листы: {_workbook_layout_summary(content)}"
+            ) from direct_error
+        try:
+            kind, value = _road_release_value(content, release_period)
+        except Exception as exc:  # noqa: BLE001 - stop: this is a real file, not a 404 probe
+            filename = urlparse(url).path.rsplit("/", 1)[-1]
+            raise RuntimeError(
+                f"Росстат: {filename} скачан, но не распознан: {exc}; "
+                f"листы: {_workbook_layout_summary(content)}"
+            ) from exc
+        if kind == "monthly":
+            monthly_rows.append((release_period, float(value)))
+        else:
+            cumulative[release_period] = value
+
+    monthly_rows.extend(_monthly_road_rows_from_cumulative(cumulative))
+    if monthly_rows:
+        dates, values = pack_series(monthly_rows)
+        validate_numeric_series(dates, values, "Росстат — автоперевозки")
+        return dates, values
+
+    details = "; ".join(download_errors[-8:])
+    if first_downloaded_url and cumulative:
+        latest = max(cumulative)
+        details = (
+            f"для накопленного итога {latest.strftime('%m-%Y')} не найден "
+            "предыдущий месячный выпуск; " + details
+        )
+    elif page_error:
+        details = f"страница: {page_error}; {details}" if details else str(page_error)
+    raise RuntimeError(f"Росстат: месячные данные автоперевозок не получены: {details}")
 
 
 def fetch_ati_ftl() -> tuple[list[str], list[float | int]]:
@@ -2708,7 +3112,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.6 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
+    # v7.7 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]
