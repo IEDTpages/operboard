@@ -456,6 +456,58 @@ class RefreshDataTests(unittest.TestCase):
             99.5,
         )
 
+    def test_parse_rosstat_production_compact_numeric_month_headers(self) -> None:
+        """Accept the compact 140x7 release even with annotated year headings."""
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            pd.DataFrame([["Содержание"]]).to_excel(
+                writer, sheet_name="Содержание", index=False, header=False
+            )
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                frame = pd.DataFrame([[None] * 7 for _ in range(140)])
+                frame.iat[3, 2] = "2026 год¹"
+                frame.iloc[4, 2:7] = [1, 2, 3, 4, 5]
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:7] = [
+                        96 + offset + line_offset + month / 10
+                        for month in range(1, 6)
+                    ]
+                frame.to_excel(
+                    writer, sheet_name=sheet_number, index=False, header=False
+                )
+
+        parsed = refresh_data.parse_rosstat_production_workbook(
+            output.getvalue(),
+            release_period=date(2026, 5, 31),
+        )
+        self.assertEqual(parsed["modes"]["mom"]["dates"][-1], "2026-05-31")
+        self.assertEqual(parsed["modes"]["mom"]["series"]["total"][-1], 96.5)
+        self.assertEqual(parsed["modes"]["yoy"]["series"]["mining"][-1], 98.5)
+
+    def test_parse_rosstat_production_uses_release_for_format_only_headers(self) -> None:
+        """Use the filename period when C4:G5 formatting has no readable labels."""
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                frame = pd.DataFrame([[None] * 7 for _ in range(140)])
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:7] = [
+                        97 + offset + line_offset + month / 10
+                        for month in range(1, 6)
+                    ]
+                frame.to_excel(
+                    writer, sheet_name=sheet_number, index=False, header=False
+                )
+
+        parsed = refresh_data.parse_rosstat_production_workbook(
+            output.getvalue(),
+            release_period=date(2026, 5, 31),
+        )
+        self.assertEqual(
+            parsed["modes"]["ytd_yoy"]["dates"],
+            ["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31"],
+        )
+
     def test_parse_road_freight_wide_workbook(self) -> None:
         output = io.BytesIO()
         pd.DataFrame(
@@ -646,6 +698,62 @@ class RefreshDataTests(unittest.TestCase):
             refresh_data.ROSSTAT_ROAD_TITLE,
         )
         self.assertTrue(urls[0].endswith("PerevGruz_05-2026.xlsx"))
+
+    def test_rosstat_discovery_rejects_neighbouring_pogruzka_workbook(self) -> None:
+        html = f"""
+        <section>
+          <span>{refresh_data.ROSSTAT_ROAD_TITLE}</span>
+          <a href='/storage/mediabank/Pogruzka_05-2026.xlsx'>Погрузка по железной дороге</a>
+          <a href='/storage/mediabank/PerevGruz_05-2026.xlsx'>Перевезено грузов</a>
+        </section>
+        """
+        urls = refresh_data.discover_rosstat_xlsx_urls(
+            html,
+            refresh_data.ROSSTAT_TRANSPORT_URL,
+            refresh_data.ROSSTAT_ROAD_TITLE,
+        )
+        self.assertEqual(len(urls), 1)
+        self.assertTrue(urls[0].endswith("PerevGruz_05-2026.xlsx"))
+
+    def test_road_fetch_never_downloads_pogruzka_page_candidate(self) -> None:
+        monthly_url = (
+            "https://rosstat.gov.ru/storage/mediabank/PerevGruz_05-2026.xlsx"
+        )
+        wrong_url = (
+            "https://rosstat.gov.ru/storage/mediabank/Pogruzka_05-2026.xlsx"
+        )
+        downloaded: list[str] = []
+
+        def download(url: str, *, attempts: int = 1) -> bytes:
+            downloaded.append(url)
+            raise RuntimeError("404 Not Found")
+
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(
+                refresh_data,
+                "rosstat_monthly_workbook_candidates",
+                return_value=[monthly_url],
+            ):
+                with patch.object(
+                    refresh_data,
+                    "_rosstat_page_candidates",
+                    return_value=[(refresh_data.ROSSTAT_TRANSPORT_URL, "page")],
+                ):
+                    with patch.object(
+                        refresh_data,
+                        "discover_rosstat_xlsx_urls",
+                        return_value=[wrong_url],
+                    ):
+                        with patch.object(
+                            refresh_data,
+                            "_download_official_workbook",
+                            side_effect=download,
+                        ):
+                            with self.assertRaisesRegex(
+                                RuntimeError, "месячные данные автоперевозок не получены"
+                            ):
+                                refresh_data.fetch_rosstat_road_freight()
+        self.assertEqual(downloaded, [monthly_url])
 
     def test_rosstat_monthly_candidates_include_confirmed_current_urls(self) -> None:
         production = refresh_data.rosstat_monthly_workbook_candidates(

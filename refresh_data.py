@@ -1581,7 +1581,15 @@ def _year_from_cell(value: Any) -> int | None:
     ):
         return int(value)
     text = _normalise_header(value)
-    match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*г\.?)?", text)
+    # Current Rosstat workbooks sometimes append a footnote, ``год`` or a
+    # base-year comment to the displayed year.  Requiring the entire cell to be
+    # exactly ``2026`` made a visually ordinary C4 value invisible to the
+    # parser.
+    years = [int(item) for item in re.findall(r"(?<!\d)(19\d{2}|20\d{2})(?!\d)", text)]
+    years = [year for year in years if 1990 <= year <= date.today().year + 1]
+    if len(set(years)) == 1:
+        return years[0]
+    match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*(?:г\.?|год))?", text)
     if not match:
         return None
     year = int(match.group(1))
@@ -1832,8 +1840,16 @@ def _rosstat_month_from_header(value: Any) -> int | None:
     # Month headings can also be genuine Excel dates formatted as ``mmmm``.
     if isinstance(value, (datetime, date)):
         return value.month
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and float(value).is_integer()
+        and 1 <= int(value) <= 12
+    ):
+        return int(value)
     text = _normalise_header(value)
-    text = re.sub(r"[\u00b9\u00b2\u00b3\u2070-\u2079]", "", text)
+    text = re.sub(r"[\u00b9\u00b2\u00b3\u2070-\u2079*]+", "", text)
     text = re.sub(r"\d+\s*\)?\s*$", "", text)
     for token in re.findall(r"[а-яё]+", text):
         month = _month_number(token)
@@ -1844,6 +1860,8 @@ def _rosstat_month_from_header(value: Any) -> int | None:
 
 def _parse_rosstat_production_fixed_layout(
     workbook: pd.ExcelFile,
+    *,
+    release_period: date | None = None,
 ) -> dict[str, Any] | None:
     """Read the current official IPI layout by its documented Excel cells.
 
@@ -1871,17 +1889,41 @@ def _parse_rosstat_production_fixed_layout(
 
         grouped = {line: [] for line in PRODUCTION_LINES}
         carried_year: int | None = None
+        data_columns = list(range(2, len(frame.columns)))
         for column_index in range(2, len(frame.columns)):
             explicit_year = _year_from_cell(frame.iat[3, column_index])
             if explicit_year is not None:
                 carried_year = explicit_year
             month = _rosstat_month_from_header(frame.iat[4, column_index])
-            if carried_year is None or month is None:
+            # A date may be stored in the month row even when the separate year
+            # row contains only a formatted/merged heading.
+            month_cell_period = _month_period_from_cell(
+                frame.iat[4, column_index],
+                default_year=carried_year or (release_period.year if release_period else None),
+            )
+            effective_year = carried_year
+            if month_cell_period is not None:
+                effective_year = effective_year or month_cell_period.year
+                month = month or month_cell_period.month
+
+            # Last-resort handling for compact current-year releases.  In the
+            # May book the five data columns C:G can be plain 1..5 or have
+            # formatting-only month captions.  The filename is authoritative
+            # for the final published month.
+            if (
+                release_period is not None
+                and len(data_columns) == release_period.month
+                and column_index - 1 <= release_period.month
+            ):
+                effective_year = effective_year or release_period.year
+                month = month or (column_index - 1)
+
+            if effective_year is None or month is None:
                 continue
             period = date(
-                carried_year,
+                effective_year,
                 month,
-                calendar.monthrange(carried_year, month)[1],
+                calendar.monthrange(effective_year, month)[1],
             )
             if period < START_DATE:
                 continue
@@ -1928,10 +1970,17 @@ def _parse_rosstat_production_fixed_layout(
     return result
 
 
-def parse_rosstat_production_workbook(content: bytes) -> dict[str, Any]:
+def parse_rosstat_production_workbook(
+    content: bytes,
+    *,
+    release_period: date | None = None,
+) -> dict[str, Any]:
     """Extract three activities and three comparison modes from Rosstat XLS/XLSX."""
     workbook = pd.ExcelFile(io.BytesIO(content))
-    fixed_layout = _parse_rosstat_production_fixed_layout(workbook)
+    fixed_layout = _parse_rosstat_production_fixed_layout(
+        workbook,
+        release_period=release_period,
+    )
     if fixed_layout is not None:
         return fixed_layout
 
@@ -2101,7 +2150,12 @@ def discover_rosstat_xlsx_urls(
         context = _anchor_context(anchor)
         filename = urlparse(url).path.rsplit("/", 1)[-1].lower()
         production_filename = bool(re.search(r"ind[_-]baza[_-]2023", filename))
-        road_filename = "perevgruz" in filename
+        # ``Pogruzka_MM-YYYY.xlsx`` is a neighbouring railway-loading table.
+        # A broad parent section on the Rosstat page can contain both titles,
+        # so road-freight discovery must require the exact PerevGruz series.
+        road_filename = bool(
+            re.fullmatch(r"perevgruz_\d{2}-20\d{2}\.xlsx?", filename)
+        )
         matches_filename = (
             production_filename
             if target == _normalise_header(ROSSTAT_PRODUCTION_TITLE)
@@ -2109,6 +2163,11 @@ def discover_rosstat_xlsx_urls(
             if target == _normalise_header(ROSSTAT_ROAD_TITLE)
             else False
         )
+        if (
+            target == _normalise_header(ROSSTAT_ROAD_TITLE)
+            and not road_filename
+        ):
+            continue
         if target not in context and not matches_filename:
             continue
         score = 100 if target in context else 0
@@ -2201,6 +2260,32 @@ def _workbook_layout_summary(content: bytes) -> str:
         return f"структура не прочитана: {exc}"
 
 
+def _production_cell_summary(content: bytes) -> str:
+    """Expose only the small documented IPI ranges in an actionable CI error."""
+    try:
+        workbook = pd.ExcelFile(io.BytesIO(content))
+        parts: list[str] = []
+        for requested in ("1", "2", "3"):
+            sheet_name = _workbook_sheet_name(workbook, requested)
+            if sheet_name is None:
+                continue
+            frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
+            cells: list[str] = []
+            for excel_row in (4, 5, 6, 7, 21):
+                row_index = excel_row - 1
+                values = []
+                if row_index < len(frame):
+                    for column_index in range(2, min(len(frame.columns), 7)):
+                        raw = frame.iat[row_index, column_index]
+                        value = "∅" if pd.isna(raw) else str(raw).replace("\n", " ")[:40]
+                        values.append(value)
+                cells.append(f"C{excel_row}:G{excel_row}={values}")
+            parts.append(f"лист {requested}: " + "; ".join(cells))
+        return " | ".join(parts) or "целевые листы 1–3 отсутствуют"
+    except Exception as exc:  # noqa: BLE001
+        return f"целевые ячейки не прочитаны: {exc}"
+
+
 def _release_period_from_url(url: str) -> date | None:
     filename = urlparse(url).path.rsplit("/", 1)[-1]
     match = re.search(r"_(\d{2})-(20\d{2})\.xlsx?$", filename, re.IGNORECASE)
@@ -2245,12 +2330,16 @@ def fetch_rosstat_production_history() -> dict[str, Any]:
             download_errors.append(f"{urlparse(url).path.rsplit('/', 1)[-1]}: {exc}")
             continue
         try:
-            return parse_rosstat_production_workbook(content)
+            return parse_rosstat_production_workbook(
+                content,
+                release_period=_release_period_from_url(url),
+            )
         except Exception as exc:  # noqa: BLE001 - do not hide a real workbook error with later 404s
             filename = urlparse(url).path.rsplit("/", 1)[-1]
             raise RuntimeError(
                 f"Росстат: {filename} скачан, но не распознан: {exc}; "
-                f"листы: {_workbook_layout_summary(content)}"
+                f"листы: {_workbook_layout_summary(content)}; "
+                f"ячейки: {_production_cell_summary(content)}"
             ) from exc
     details = "; ".join(download_errors[-6:])
     if page_error:
@@ -2672,6 +2761,19 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
     except Exception as exc:  # noqa: BLE001 - an explicit official URL may remain
         page_error = exc
     candidates = list(dict.fromkeys(item for item in candidates if item))
+    # Never feed a neighbouring Rosstat workbook into this parser.  The broad
+    # transport-page context previously admitted Pogruzka_MM-YYYY.xlsx and then
+    # reported its year sheets as if they belonged to road freight.
+    if not override:
+        candidates = [
+            item
+            for item in candidates
+            if re.fullmatch(
+                r"perevgruz_\d{2}-20\d{2}\.xlsx?",
+                urlparse(item).path.rsplit("/", 1)[-1],
+                re.IGNORECASE,
+            )
+        ]
     if not candidates:
         raise RuntimeError(
             "Росстат: ссылка «Перевезено грузов автомобильным транспортом» не найдена; "
@@ -3305,7 +3407,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.8 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
+    # v7.10 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]
