@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import os
 import unittest
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -320,6 +321,46 @@ class RefreshDataTests(unittest.TestCase):
         )
         self.assertEqual(values, [500.1, 510.2, 520.3, 530.4])
 
+    def test_parse_road_freight_single_month_release(self) -> None:
+        output = io.BytesIO()
+        pd.DataFrame(
+            [
+                [
+                    "Перевезено грузов автомобильным транспортом организаций всех видов "
+                    "экономической деятельности, тыс. тонн",
+                    None,
+                    None,
+                ],
+                [None, "май 2026", "январь–май 2026"],
+                ["Перевезено грузов", 560_500, 2_564_200],
+                ["Темп роста, %", 101.2, 99.8],
+            ]
+        ).to_excel(output, index=False, header=False)
+        dates, values = refresh_data.parse_rosstat_road_workbook(output.getvalue())
+        self.assertEqual(dates, ["2026-05-31"])
+        self.assertEqual(values, [560.5])
+
+    def test_parse_road_freight_months_in_rows(self) -> None:
+        output = io.BytesIO()
+        pd.DataFrame(
+            [
+                ["Перевезено грузов автомобильным транспортом, млн тонн", None, None],
+                [None, 2025, 2026],
+                ["январь", 459.1, 470.2],
+                ["февраль", 477.3, 482.4],
+                ["март", 529.8, 535.6],
+            ]
+        ).to_excel(output, index=False, header=False)
+        dates, values = refresh_data.parse_rosstat_road_workbook(output.getvalue())
+        self.assertEqual(
+            dates,
+            [
+                "2025-01-31", "2025-02-28", "2025-03-31",
+                "2026-01-31", "2026-02-28", "2026-03-31",
+            ],
+        )
+        self.assertEqual(values, [459.1, 477.3, 529.8, 470.2, 482.4, 535.6])
+
     def test_rosstat_discovery_prefers_current_production_base(self) -> None:
         html = f"""
         <section>Данные по ОКВЭД2 (базисный 2018 год)
@@ -338,6 +379,65 @@ class RefreshDataTests(unittest.TestCase):
             preferred_context="базисный 2023 год",
         )
         self.assertTrue(urls[0].endswith("ind-baza_2023.xlsx"))
+
+    def test_rosstat_discovery_recognises_current_filename_patterns(self) -> None:
+        html = """
+        <section>
+          <a href='/storage/mediabank/PerevGruz_04-2026.xlsx'>XLSX</a>
+          <a href='/storage/mediabank/PerevGruz_05-2026.xlsx'>XLSX</a>
+        </section>
+        """
+        urls = refresh_data.discover_rosstat_xlsx_urls(
+            html,
+            refresh_data.ROSSTAT_TRANSPORT_URL,
+            refresh_data.ROSSTAT_ROAD_TITLE,
+        )
+        self.assertTrue(urls[0].endswith("PerevGruz_05-2026.xlsx"))
+
+    def test_rosstat_monthly_candidates_include_confirmed_current_urls(self) -> None:
+        production = refresh_data.rosstat_monthly_workbook_candidates(
+            refresh_data.ROSSTAT_PRODUCTION_FILENAME_PREFIX,
+            confirmed_url=refresh_data.ROSSTAT_PRODUCTION_XLSX_CONFIRMED,
+            as_of=date(2026, 7, 21),
+            lookback_months=3,
+        )
+        road = refresh_data.rosstat_monthly_workbook_candidates(
+            refresh_data.ROSSTAT_ROAD_FILENAME_PREFIX,
+            confirmed_url=refresh_data.ROSSTAT_ROAD_XLSX_CONFIRMED,
+            as_of=date(2026, 7, 21),
+            lookback_months=3,
+        )
+        self.assertTrue(production[0].endswith("ind_baza_2023_06-2026.xlsx"))
+        self.assertIn(refresh_data.ROSSTAT_PRODUCTION_XLSX_CONFIRMED, production)
+        self.assertTrue(road[0].endswith("PerevGruz_06-2026.xlsx"))
+        self.assertIn(refresh_data.ROSSTAT_ROAD_XLSX_CONFIRMED, road)
+
+    def test_current_road_url_is_used_when_catalogue_page_is_unavailable(self) -> None:
+        expected = (["2026-05-31"], [560.5])
+
+        def download(url: str, *, attempts: int = 2) -> bytes:
+            if url == refresh_data.ROSSTAT_ROAD_XLSX_CONFIRMED:
+                return b"workbook"
+            raise RuntimeError("404 Not Found")
+
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(
+                refresh_data,
+                "_rosstat_page_candidates",
+                side_effect=RuntimeError("temporary page outage"),
+            ):
+                with patch.object(
+                    refresh_data,
+                    "_download_official_workbook",
+                    side_effect=download,
+                ):
+                    with patch.object(
+                        refresh_data,
+                        "parse_rosstat_road_workbook",
+                        return_value=expected,
+                    ):
+                        result = refresh_data.fetch_rosstat_road_freight()
+        self.assertEqual(result, expected)
 
     def test_rosstat_tls_certificate_failure_uses_restricted_fallback(self) -> None:
         class Response:

@@ -63,14 +63,20 @@ FORECAST_ECONOMY_PRODUCTION_SLUGS: dict[str, str] = {
 }
 ROSSTAT_INDUSTRIAL_URL = "https://rosstat.gov.ru/enterprise_industrial"
 ROSSTAT_TRANSPORT_URL = "https://rosstat.gov.ru/statistics/transport"
-ROSSTAT_PRODUCTION_XLSX_FALLBACK = (
-    "https://rosstat.gov.ru/storage/mediabank/ind-baza_2023.xlsx"
+ROSSTAT_STORAGE_URL = "https://rosstat.gov.ru/storage/mediabank"
+ROSSTAT_PRODUCTION_FILENAME_PREFIX = "ind_baza_2023"
+ROSSTAT_ROAD_FILENAME_PREFIX = "PerevGruz"
+ROSSTAT_PRODUCTION_XLSX_CONFIRMED = (
+    f"{ROSSTAT_STORAGE_URL}/ind_baza_2023_05-2026.xlsx"
+)
+ROSSTAT_ROAD_XLSX_CONFIRMED = (
+    f"{ROSSTAT_STORAGE_URL}/PerevGruz_05-2026.xlsx"
 )
 ROSSTAT_PRODUCTION_TITLE = (
     "Индексы производства по отдельным видам экономической деятельности "
     "по Российской Федерации"
 )
-ROSSTAT_ROAD_TITLE = "Перевозки грузов по видам транспорта"
+ROSSTAT_ROAD_TITLE = "Перевезено грузов автомобильным транспортом"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
 
 SESSION = requests.Session()
@@ -1558,6 +1564,14 @@ def _parse_period_cell(value: Any) -> date | None:
 
 
 def _year_from_cell(value: Any) -> int | None:
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and float(value).is_integer()
+        and 1990 <= int(value) <= date.today().year + 1
+    ):
+        return int(value)
     text = _normalise_header(value)
     match = re.fullmatch(r"(19\d{2}|20\d{2})(?:\s*г\.?)?", text)
     return int(match.group(1)) if match else None
@@ -1570,6 +1584,21 @@ def _month_from_cell(value: Any) -> int | None:
     if re.search(r"квартал|полугод|с начала года|январь\s*[-–]", text):
         return None
     return _month_number(text)
+
+
+def _is_cumulative_month_text(value: Any) -> bool:
+    """Distinguish a single month from ranges such as ``январь–май``."""
+    text = _normalise_header(value)
+    if any(token in text for token in ("с начала года", "нарастающим итогом")):
+        return True
+    month_words = (
+        "январ", "феврал", "март", "апрел", "май", "мая", "июн",
+        "июл", "август", "сентябр", "октябр", "ноябр", "декабр",
+    )
+    found = {word for word in month_words if word in text}
+    return len(found) > 1 or bool(
+        re.search(r"[а-я]+\s*[-–—]\s*[а-я]+", text)
+    )
 
 
 def _wide_month_columns(frame: pd.DataFrame, header_index: int) -> dict[int, date]:
@@ -1605,6 +1634,8 @@ def _wide_month_columns(frame: pd.DataFrame, header_index: int) -> dict[int, dat
     output: dict[int, date] = {}
     for column_index, value in enumerate(frame.iloc[header_index]):
         text = _normalise_header(value)
+        if _is_cumulative_month_text(text):
+            continue
         explicit = re.search(r"([а-я]+)[\s./-]+(20\d{2})", text)
         if explicit:
             month = _month_number(explicit.group(1))
@@ -1781,7 +1812,7 @@ def discover_rosstat_xlsx_urls(
     soup = BeautifulSoup(html, "lxml")
     target = _normalise_header(target_title)
     preferred = _normalise_header(preferred_context)
-    ranked: list[tuple[int, str]] = []
+    ranked: list[tuple[int, int, str]] = []
     seen: set[str] = set()
     for anchor in soup.select("a[href]"):
         href = str(anchor.get("href") or "")
@@ -1791,19 +1822,67 @@ def discover_rosstat_xlsx_urls(
         if not url or url in seen:
             continue
         context = _anchor_context(anchor)
-        if target not in context:
+        filename = urlparse(url).path.rsplit("/", 1)[-1].lower()
+        production_filename = bool(re.search(r"ind[_-]baza[_-]2023", filename))
+        road_filename = "perevgruz" in filename
+        matches_filename = (
+            production_filename
+            if target == _normalise_header(ROSSTAT_PRODUCTION_TITLE)
+            else road_filename
+            if target == _normalise_header(ROSSTAT_ROAD_TITLE)
+            else False
+        )
+        if target not in context and not matches_filename:
             continue
-        score = 100
+        score = 100 if target in context else 0
+        if matches_filename:
+            score += 120
         if preferred and preferred in context:
             score += 80
-        filename = urlparse(url).path.lower()
         if "2023" in filename and "базисный 2023" in preferred:
             score += 60
         if target == _normalise_header(ROSSTAT_ROAD_TITLE) and "perev" in filename:
-            score += 10
-        ranked.append((score, url))
+            score += 30
+        release_match = re.search(r"_(\d{2})-(20\d{2})\.xlsx?", filename)
+        release_rank = (
+            int(release_match.group(2)) * 12 + int(release_match.group(1))
+            if release_match
+            else 0
+        )
+        ranked.append((score, release_rank, url))
         seen.add(url)
-    return [url for _, url in sorted(ranked, key=lambda item: item[0], reverse=True)]
+    return [
+        url
+        for _, _, url in sorted(
+            ranked, key=lambda item: (item[0], item[1]), reverse=True
+        )
+    ]
+
+
+def _shift_month(year: int, month: int, offset: int) -> tuple[int, int]:
+    serial = year * 12 + (month - 1) + offset
+    return serial // 12, serial % 12 + 1
+
+
+def rosstat_monthly_workbook_candidates(
+    filename_prefix: str,
+    *,
+    confirmed_url: str,
+    as_of: date | None = None,
+    lookback_months: int = 8,
+) -> list[str]:
+    """Build current Rosstat URLs when the catalogue page is temporarily unavailable."""
+    anchor = as_of or date.today()
+    urls: list[str] = []
+    # Releases normally lag the reference month. Probe the previous month first,
+    # then walk backwards through recent official naming variants.
+    for offset in range(-1, -lookback_months - 1, -1):
+        year, month = _shift_month(anchor.year, anchor.month, offset)
+        urls.append(
+            f"{ROSSTAT_STORAGE_URL}/{filename_prefix}_{month:02d}-{year}.xlsx"
+        )
+    urls.append(confirmed_url)
+    return list(dict.fromkeys(urls))
 
 
 def _rosstat_page_candidates(page_url: str) -> list[tuple[str, str]]:
@@ -1819,11 +1898,11 @@ def _rosstat_page_candidates(page_url: str) -> list[tuple[str, str]]:
     return pages
 
 
-def _download_official_workbook(url: str) -> bytes:
+def _download_official_workbook(url: str, *, attempts: int = 2) -> bytes:
     safe_url = _safe_rosstat_url(url, url)
     if not safe_url:
         raise RuntimeError("Росстат: отклонена ссылка за пределами rosstat.gov.ru")
-    response = get(safe_url, attempts=2)
+    response = get(safe_url, attempts=attempts)
     content = response.content
     if len(content) > 15 * 1024 * 1024:
         raise RuntimeError("Росстат: XLSX превышает допустимый размер 15 МБ")
@@ -1848,15 +1927,75 @@ def fetch_rosstat_production_history() -> dict[str, Any]:
             )
     except Exception as exc:  # noqa: BLE001 - direct official fallback remains
         page_error = exc
-    candidates.append(ROSSTAT_PRODUCTION_XLSX_FALLBACK)
+    candidates.extend(
+        rosstat_monthly_workbook_candidates(
+            ROSSTAT_PRODUCTION_FILENAME_PREFIX,
+            confirmed_url=ROSSTAT_PRODUCTION_XLSX_CONFIRMED,
+        )
+    )
 
     last_error: Exception | None = page_error
     for url in dict.fromkeys(item for item in candidates if item):
         try:
-            return parse_rosstat_production_workbook(_download_official_workbook(url))
+            return parse_rosstat_production_workbook(
+                _download_official_workbook(url, attempts=1)
+            )
         except Exception as exc:  # noqa: BLE001 - try another official workbook
             last_error = exc
     raise RuntimeError(f"Росстат: книга ИПП не обработана: {last_error}")
+
+
+def _road_sheet_scale(points: list[tuple[date, float]]) -> list[tuple[date, float]]:
+    if not points:
+        return points
+    median = sorted(abs(value) for _, value in points)[len(points) // 2]
+    # The operational table is normally published in thousand tonnes, while the
+    # dashboard and the imported EMISS history use million tonnes.
+    return (
+        [(period, value / 1000.0) for period, value in points]
+        if median > 100_000
+        else points
+    )
+
+
+def _road_column_context(frame: pd.DataFrame, header_index: int, column_index: int) -> str:
+    parts: list[str] = []
+    for row_index in range(max(0, header_index - 7), header_index + 1):
+        carried = ""
+        for current_column, value in enumerate(frame.iloc[row_index]):
+            text = _normalise_header(value)
+            if text and text != "nan":
+                carried = text
+            if current_column == column_index:
+                if carried:
+                    parts.append(carried)
+                break
+    return " ".join(parts)
+
+
+def _road_value_score(value: float, column_context: str) -> int:
+    context = _normalise_header(column_context)
+    if value <= 0 or value >= 5_000_000:
+        return -10_000
+    score = 0
+    if "тон" in context and ("тыс" in context or "млн" in context):
+        score += 160
+    if any(token in context for token in ("темп", "рост", "снижен", "%", "процент")):
+        score -= 300
+    if any(token in context for token in ("грузооборот", "тонно-килом", "ткм")):
+        score -= 400
+    if value > 180:
+        score += 80
+    if value > 10_000:
+        score += 40
+    return score
+
+
+def _month_only_from_cell(value: Any) -> int | None:
+    text = _normalise_header(value)
+    if _is_cumulative_month_text(text) or re.search(r"20\d{2}", text):
+        return None
+    return _month_from_cell(value)
 
 
 def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float | int]]:
@@ -1867,11 +2006,16 @@ def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float |
     for sheet_name in workbook.sheet_names:
         frame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
         text_blob = " ".join(_normalise_header(value) for value in frame.to_numpy().ravel())
-        sheet_bonus = 30 if "автомоб" in text_blob and "груз" in text_blob else 0
+        sheet_has_auto = "автомоб" in text_blob
+        sheet_has_cargo = (
+            ("перевез" in text_blob or "перевоз" in text_blob)
+            and "груз" in text_blob
+        )
+        sheet_bonus = 30 if sheet_has_auto and sheet_has_cargo else 0
 
         for header_index in range(min(len(frame), 40)):
             periods = _wide_month_columns(frame, header_index)
-            if len(periods) < 3:
+            if not periods:
                 continue
             for value_index in range(header_index + 1, len(frame)):
                 row = frame.iloc[value_index]
@@ -1880,19 +2024,26 @@ def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float |
                     for value in row.iloc[: min(10, len(row))]
                     if pd.notna(value)
                 )
-                if (
-                    "автомоб" not in context
-                    or "грузооборот" in context
-                    or "пассаж" in context
-                    or "коммерческой основе" in context
+                row_has_auto = "автомоб" in context or sheet_has_auto
+                row_has_cargo = (
+                    ("перевез" in context and "груз" in context)
+                    or ("автомоб" in context and sheet_has_cargo)
+                    or ("российская федерация" in context and sheet_has_cargo)
+                )
+                if not row_has_auto or not row_has_cargo or any(
+                    token in context
+                    for token in ("грузооборот", "пассаж", "коммерческой основе")
                 ):
                     continue
                 rows: list[tuple[date, float]] = []
                 for column_index, period in periods.items():
                     number = to_number(row.iloc[column_index])
-                    if number is not None:
+                    column_context = _road_column_context(
+                        frame, header_index, column_index
+                    )
+                    if number is not None and _road_value_score(number, column_context) >= 0:
                         rows.append((period, number))
-                if len(rows) < 3:
+                if not rows:
                     continue
                 score = len(rows) + sheet_bonus + 100
                 if "российская федерация" in context:
@@ -1900,6 +2051,50 @@ def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float |
                 if "без учета новых субъектов" in context:
                     score += 10
                 row_candidates.append((score, rows))
+
+        # Some Rosstat releases put years in columns and months in rows.
+        for header_index in range(min(len(frame), 40)):
+            year_columns = {
+                column_index: year
+                for column_index, value in enumerate(frame.iloc[header_index])
+                if (year := _year_from_cell(value)) is not None
+            }
+            if not year_columns:
+                continue
+            for value_index in range(header_index + 1, len(frame)):
+                row = frame.iloc[value_index]
+                month = next(
+                    (
+                        parsed_month
+                        for value in row.iloc[: min(10, len(row))]
+                        if (parsed_month := _month_only_from_cell(value)) is not None
+                    ),
+                    None,
+                )
+                if month is None:
+                    continue
+                rows: list[tuple[date, float]] = []
+                score = sheet_bonus + 80
+                for column_index, year in year_columns.items():
+                    number = to_number(row.iloc[column_index])
+                    column_context = _road_column_context(
+                        frame, header_index, column_index
+                    )
+                    value_score = (
+                        _road_value_score(number, column_context)
+                        if number is not None
+                        else -10_000
+                    )
+                    if number is not None and value_score >= 0:
+                        rows.append(
+                            (
+                                date(year, month, calendar.monthrange(year, month)[1]),
+                                number,
+                            )
+                        )
+                        score += value_score
+                if rows:
+                    row_candidates.append((score, rows))
 
     merged_rows: dict[date, float] = {}
     for _, rows in sorted(row_candidates, key=lambda item: item[0]):
@@ -1909,9 +2104,7 @@ def parse_rosstat_road_workbook(content: bytes) -> tuple[list[str], list[float |
     best_rows = [(period, value) for period, value in best_rows if period >= START_DATE]
     if not best_rows:
         raise RuntimeError("Росстат: месячный ряд автоперевозок в книге не распознан")
-    median = sorted(abs(value) for _, value in best_rows)[len(best_rows) // 2]
-    if median > 100_000:  # some releases use thousand tonnes; dashboard uses million tonnes
-        best_rows = [(period, value / 1000.0) for period, value in best_rows]
+    best_rows = _road_sheet_scale(best_rows)
     dates, values = pack_series(best_rows)
     validate_numeric_series(dates, values, "Росстат — автоперевозки")
     if any(not 0 < float(value) < 5000 for value in values):
@@ -1934,16 +2127,24 @@ def fetch_rosstat_road_freight() -> tuple[list[str], list[float | int]]:
             )
     except Exception as exc:  # noqa: BLE001 - an explicit official URL may remain
         page_error = exc
+    candidates.extend(
+        rosstat_monthly_workbook_candidates(
+            ROSSTAT_ROAD_FILENAME_PREFIX,
+            confirmed_url=ROSSTAT_ROAD_XLSX_CONFIRMED,
+        )
+    )
     candidates = list(dict.fromkeys(item for item in candidates if item))
     if not candidates:
         raise RuntimeError(
-            "Росстат: ссылка «Перевозки грузов по видам транспорта» не найдена; "
+            "Росстат: ссылка «Перевезено грузов автомобильным транспортом» не найдена; "
             f"{page_error}"
         )
     last_error: Exception | None = page_error
-    for url in candidates[:8]:
+    for url in candidates[:16]:
         try:
-            return parse_rosstat_road_workbook(_download_official_workbook(url))
+            return parse_rosstat_road_workbook(
+                _download_official_workbook(url, attempts=1)
+            )
         except Exception as exc:  # noqa: BLE001 - try alternate current/historical workbook
             last_error = exc
     raise RuntimeError(f"Росстат: файл автоперевозок не обработан: {last_error}")
@@ -2455,7 +2656,8 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
             "Ретроспектива 2021–2025 гг. сформирована из выгрузки ЕМИСС. "
             "С 2023 года данные приведены по Российской Федерации без учета "
             "ДНР, ЛНР, Запорожской и Херсонской областей. Новые месяцы "
-            "загружаются из таблицы Росстата «Перевозки грузов по видам транспорта»."
+            "загружаются из таблицы Росстата «Перевезено грузов автомобильным "
+            "транспортом (с 2000 г.)»."
         ),
         "value_decimals": 1,
         "change_decimals": 1,
@@ -2506,7 +2708,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.5 uses public Rosstat workbooks with a restricted TLS fallback. Source and
+    # v7.6 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]
