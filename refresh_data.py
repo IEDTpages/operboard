@@ -78,6 +78,12 @@ ROSSTAT_PRODUCTION_TITLE = (
 )
 ROSSTAT_ROAD_TITLE = "Перевезено грузов автомобильным транспортом"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
+INDEX1520_URL = "https://index1520.com/"
+DREWRY_WCI_URL = (
+    "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/"
+    "world-container-index-assessed-by-drewry"
+)
+CBR_MACRO_SURVEY_URL = "https://www.cbr.ru/statistics/ddkp/mo_br/"
 
 SESSION = requests.Session()
 SESSION.headers.update(
@@ -324,6 +330,7 @@ def parse_date(value: Any) -> date | None:
         "%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d",
         "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y",
         "%d.%m.%y", "%d/%m/%y", "%d-%m-%y",
+        "%d-%b-%Y", "%d-%b-%y",
         "%m/%d/%Y", "%m/%d/%y", "%Y%m%d",
         "%m %d %Y", "%m %d %y", "%d %m %Y", "%d %m %y",
     )
@@ -2882,6 +2889,371 @@ def fetch_ati_ftl() -> tuple[list[str], list[float | int]]:
     return dates, values
 
 
+def _month_end_from_chart_label(value: Any) -> date | None:
+    parsed = parse_date(value)
+    if parsed:
+        return date(parsed.year, parsed.month, calendar.monthrange(parsed.year, parsed.month)[1])
+    text = str(value or "").strip().lower().replace("\xa0", " ")
+    match = re.search(r"(?<!\d)(0?[1-9]|1[0-2])[./-](20\d{2})(?!\d)", text)
+    if match:
+        month_value, year_value = int(match.group(1)), int(match.group(2))
+        return date(year_value, month_value, calendar.monthrange(year_value, month_value)[1])
+    match = re.search(r"(?<!\d)(20\d{2})[./-](0?[1-9]|1[0-2])(?!\d)", text)
+    if match:
+        year_value, month_value = int(match.group(1)), int(match.group(2))
+        return date(year_value, month_value, calendar.monthrange(year_value, month_value)[1])
+    return None
+
+
+def parse_erai_chart_payload(charts: list[dict[str, Any]]) -> tuple[list[str], list[float | int]]:
+    """Extract the monthly composite ERAI row from rendered Chart.js instances."""
+    candidates: list[tuple[int, list[tuple[date, float]]]] = []
+    for chart in charts:
+        labels = chart.get("labels") if isinstance(chart, dict) else None
+        datasets = chart.get("datasets") if isinstance(chart, dict) else None
+        if not isinstance(labels, list) or not isinstance(datasets, list):
+            continue
+        title = _normalise_header(chart.get("title"))
+        for dataset in datasets:
+            if not isinstance(dataset, dict):
+                continue
+            label = _normalise_header(dataset.get("label"))
+            context = f"{title} {label}".strip()
+            if any(word in context for word in ("erai east", "erai west", "wci", "transit", "время", "скорост")):
+                continue
+            if "erai" not in context and "индекс" not in context and "index" not in context:
+                continue
+            raw_values = dataset.get("data")
+            if not isinstance(raw_values, list):
+                continue
+            points: list[tuple[date, float]] = []
+            for index, item in enumerate(raw_values):
+                item_label = labels[index] if index < len(labels) else None
+                raw_value = item
+                if isinstance(item, dict):
+                    item_label = item.get("x") or item.get("date") or item_label
+                    raw_value = item.get("y") if "y" in item else item.get("value")
+                period = _month_end_from_chart_label(item_label)
+                value = to_number(raw_value)
+                if period and value is not None and 100 <= value <= 100_000:
+                    points.append((period, value))
+            if len(points) >= 6:
+                score = len(points) + (1000 if "erai" in context else 0)
+                candidates.append((score, points))
+    if not candidates:
+        raise RuntimeError("ERAI: в Chart.js не найден месячный ряд композитного индекса")
+    _, points = max(candidates, key=lambda item: item[0])
+    dates, values = pack_series(points)
+    validate_numeric_series(dates, values, "ERAI — композитный индекс")
+    return dates, values
+
+
+def _rendered_chart_instances(page: Page) -> list[dict[str, Any]]:
+    return page.evaluate(
+        """() => {
+          const instances = window.Chart && window.Chart.instances
+            ? Object.values(window.Chart.instances) : [];
+          return instances.map(chart => ({
+            title: chart?.options?.title?.text || chart?.options?.plugins?.title?.text || '',
+            labels: chart?.data?.labels || [],
+            datasets: (chart?.data?.datasets || []).map(dataset => ({
+              label: dataset.label || '', data: dataset.data || []
+            }))
+          }));
+        }"""
+    )
+
+
+def fetch_erai_composite(browser: Browser) -> tuple[list[str], list[float | int]]:
+    page = browser.new_page(locale="ru-RU")
+    try:
+        page.goto(INDEX1520_URL, wait_until="domcontentloaded", timeout=120_000)
+        page.wait_for_selector("canvas", timeout=120_000)
+        for label in ("Месяцы", "За все время"):
+            locator = page.get_by_text(label, exact=True)
+            if locator.count():
+                try:
+                    locator.first.click(timeout=10_000)
+                    page.wait_for_timeout(1_000)
+                except Exception:  # noqa: BLE001 - the chart may already be in this mode
+                    pass
+        charts = _rendered_chart_instances(page)
+        return parse_erai_chart_payload(charts)
+    finally:
+        page.close()
+
+
+def _svg_number(value: Any) -> float | None:
+    try:
+        number = float(str(value))
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def parse_canva_wci_svg(svg_html: str) -> dict[str, tuple[list[str], list[float | int]]]:
+    """Recover exact weekly WCI points from Canva's accessible SVG geometry."""
+    soup = BeautifulSoup(svg_html, "lxml")
+    svg = soup.find("svg") or soup
+    grid_y = sorted(
+        {
+            value
+            for line in svg.find_all("line")
+            if (value := _svg_number(line.get("y1"))) is not None
+            and _svg_number(line.get("y2")) == value
+            and line.get("stroke") in {"rgba(0,0,0,0.6)", "rgba(0,0,0,0.25)"}
+        }
+    )
+    axis_values = [
+        int(match.group(1)) * 1000
+        for text in svg.find_all("text")
+        if (match := re.fullmatch(r"\$(\d+)", text.get_text(strip=True)))
+    ]
+    if len(grid_y) < 2 or not axis_values:
+        raise RuntimeError("Drewry WCI: в SVG не распознана вертикальная шкала")
+    top_y, bottom_y, max_value = min(grid_y), max(grid_y), max(axis_values)
+
+    boundary_dates = sorted(
+        parsed
+        for element in svg.find_all(attrs={"aria-valuetext": True})
+        if (parsed := parse_date(element.get("aria-valuetext"))) is not None
+    )
+    if len(boundary_dates) < 2:
+        raise RuntimeError("Drewry WCI: в SVG не распознан диапазон дат")
+    start_date, end_date = boundary_dates[0], boundary_dates[-1]
+
+    # Canva renders every second observation as an x-axis label.  Using a
+    # simple interpolation between the range handles would shift dates after
+    # a holiday week (Drewry did not publish on 1 January 2026).  Rebuild the
+    # observation calendar from the visible tick labels instead: the hidden
+    # point between two ticks is the Thursday immediately before the latter.
+    rendered_dates = [
+        parsed
+        for text in svg.find_all("text")
+        if (parsed := parse_date(text.get_text(" ", strip=True))) is not None
+    ]
+    tick_dates = rendered_dates
+    if len(rendered_dates) >= 4 and rendered_dates[:2] == [start_date, end_date]:
+        tick_dates = rendered_dates[2:]
+    tick_dates = list(dict.fromkeys(tick_dates))
+
+    labels_by_colour: dict[str, str] = {}
+    for text in svg.find_all("text"):
+        label = text.get_text(" ", strip=True)
+        if not (label.startswith("WCI:") or "Composite Index" in label):
+            continue
+        ancestor = text
+        colour = None
+        for _ in range(4):
+            ancestor = ancestor.parent
+            if ancestor is None:
+                break
+            circle = ancestor.find("circle", fill=True)
+            if circle:
+                colour = str(circle.get("fill")).lower()
+                break
+        if colour:
+            labels_by_colour[colour] = label
+
+    segments_by_colour: dict[str, list[tuple[float, float, float, float]]] = {}
+    for path in svg.find_all("path"):
+        d_value = str(path.get("d") or "")
+        colour = str(path.get("stroke") or "").lower()
+        if " C " not in d_value or not colour or path.get("fill") != "none":
+            continue
+        numbers = [float(value) for value in re.findall(r"-?\d+(?:\.\d+)?", d_value)]
+        if len(numbers) < 8:
+            continue
+        segments_by_colour.setdefault(colour, []).append(
+            (numbers[0], numbers[1], numbers[-2], numbers[-1])
+        )
+
+    key_by_label = {
+        "world container index (wci) composite index": "wci_composite",
+        "wci: shanghai to rotterdam": "wci_shanghai_rotterdam",
+        "wci: shanghai to los angeles": "wci_shanghai_los_angeles",
+        "wci: shanghai to genoa": "wci_shanghai_genoa",
+        "wci: shanghai to new york": "wci_shanghai_new_york",
+    }
+    output: dict[str, tuple[list[str], list[float | int]]] = {}
+    for colour, segments in segments_by_colour.items():
+        label = labels_by_colour.get(colour, "").lower()
+        key = key_by_label.get(label)
+        if key is None and len(segments_by_colour) == 1:
+            key = "wci_composite"
+        if key is None or not segments:
+            continue
+        segments.sort(key=lambda item: item[0])
+        y_values = [segments[0][1], *[segment[3] for segment in segments]]
+        point_count = len(y_values)
+        if point_count < 2:
+            continue
+        point_dates: list[date] = []
+        if len(tick_dates) >= 2 and tick_dates[0] == start_date and tick_dates[-1] == end_date:
+            point_dates = [tick_dates[0]]
+            for tick in tick_dates[1:]:
+                point_dates.extend([tick - timedelta(days=7), tick])
+        if len(point_dates) != point_count:
+            span_days = (end_date - start_date).days
+            step_days = span_days / (point_count - 1)
+            point_dates = [
+                start_date + timedelta(days=round(step_days * index))
+                for index in range(point_count)
+            ]
+        rows: list[tuple[date, float]] = []
+        for point_date, y_value in zip(point_dates, y_values):
+            value = max_value * (bottom_y - y_value) / (bottom_y - top_y)
+            rows.append((point_date, round(value)))
+        dates, values = pack_series(rows)
+        validate_numeric_series(dates, values, f"Drewry WCI — {key}")
+        output[key] = (dates, values)
+    return output
+
+
+def _canva_iframe_urls(html: str) -> list[str]:
+    soup = BeautifulSoup(html, "lxml")
+    urls: list[str] = []
+    for iframe in soup.find_all("iframe", src=True):
+        url = urljoin(DREWRY_WCI_URL, str(iframe.get("src")))
+        if "canva.com/design/" in url and url not in urls:
+            urls.append(url)
+    if len(urls) < 2:
+        raise RuntimeError("Drewry WCI: на странице не найдены два графика Canva")
+    return urls[:2]
+
+
+def fetch_drewry_wci(browser: Browser) -> dict[str, tuple[list[str], list[float | int]]]:
+    urls = _canva_iframe_urls(get(DREWRY_WCI_URL).text)
+    output: dict[str, tuple[list[str], list[float | int]]] = {}
+    for url in urls:
+        page = browser.new_page(locale="en-GB")
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=120_000)
+            chart = page.locator("main svg").first
+            chart.wait_for(state="visible", timeout=120_000)
+            svg_html = "<svg>" + chart.inner_html(timeout=30_000) + "</svg>"
+            output.update(parse_canva_wci_svg(svg_html))
+        finally:
+            page.close()
+    required = {
+        "wci_composite", "wci_shanghai_rotterdam", "wci_shanghai_genoa",
+        "wci_shanghai_los_angeles", "wci_shanghai_new_york",
+    }
+    missing = required.difference(output)
+    if missing:
+        raise RuntimeError(f"Drewry WCI: не распознаны ряды {', '.join(sorted(missing))}")
+    return output
+
+
+def fetch_logistics_indices() -> tuple[
+    dict[str, tuple[list[str], list[float | int]]], dict[str, str]
+]:
+    if sync_playwright is None:
+        return {}, {"erai_composite": "Playwright не установлен", "wci_composite": "Playwright не установлен"}
+    results: dict[str, tuple[list[str], list[float | int]]] = {}
+    errors: dict[str, str] = {}
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            try:
+                results["erai_composite"] = fetch_erai_composite(browser)
+            except Exception as exc:  # noqa: BLE001
+                errors["erai_composite"] = str(exc)
+            try:
+                results.update(fetch_drewry_wci(browser))
+            except Exception as exc:  # noqa: BLE001
+                errors["wci_composite"] = str(exc)
+        finally:
+            browser.close()
+    return results, errors
+
+
+MACRO_SURVEY_LABELS: dict[str, tuple[str, str]] = {
+    "macro_survey_cpi": ("ипц", "дек. к дек."),
+    "macro_survey_key_rate": ("ключевая ставка", "в среднем за год"),
+    "macro_survey_gdp": ("ввп", "%, г/г"),
+    "macro_survey_exports": ("экспорт товаров и услуг", "млрд долл."),
+    "macro_survey_imports": ("импорт товаров и услуг", "млрд долл."),
+    "macro_survey_usdrub": ("курс usd/rub", "руб."),
+    # The current CBR table spells this as both "налогобложения" and
+    # "налогообложения" in different publications; the qualifier keeps the
+    # short common prefix unambiguous.
+    "macro_survey_oil": ("цена нефти", "баррель"),
+}
+
+
+def _survey_current_number(value: Any) -> float | None:
+    text = re.sub(r"\([^)]*\)", " ", str(value or ""))
+    match = re.search(r"(?<!\d)[+-]?\d+(?:[.,]\d+)?(?!\d)", text)
+    return to_number(match.group(0)) if match else None
+
+
+def parse_cbr_macro_survey_html(html: str) -> dict[str, dict[str, Any]]:
+    """Parse the current survey table and ignore prior-survey values in brackets."""
+    soup = BeautifulSoup(html, "lxml")
+    rows = [
+        [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"], recursive=False)]
+        for row in soup.find_all("tr")
+    ]
+    rows = [row for row in rows if row]
+    header: list[str] | None = None
+    for row in rows:
+        if sum(bool(re.fullmatch(r"20\d{2}(?:\s*\(факт\))?", cell, re.I)) for cell in row) >= 4:
+            header = row
+            break
+    if not header:
+        raise RuntimeError("ЦБ РФ: в макроэкономическом опросе не найдена строка годов")
+    years: list[int] = []
+    fact_years: set[int] = set()
+    for cell in header:
+        match = re.search(r"20\d{2}", cell)
+        if not match:
+            continue
+        year_value = int(match.group(0))
+        years.append(year_value)
+        if "факт" in cell.lower():
+            fact_years.add(year_value)
+    if not fact_years and years:
+        fact_years = {year for year in years if year < datetime.now().year}
+
+    output: dict[str, dict[str, Any]] = {}
+    for key, (label, qualifier) in MACRO_SURVEY_LABELS.items():
+        matched_row = None
+        for row in rows:
+            row_label = _normalise_header(row[0])
+            row_text = _normalise_header(" ".join(row[:2]))
+            if label in row_label and qualifier in row_text:
+                matched_row = row
+                break
+        if matched_row is None:
+            continue
+        raw_cells = matched_row[-len(years):]
+        values = [_survey_current_number(cell) for cell in raw_cells]
+        points = [
+            (year, value)
+            for year, value in zip(years, values, strict=False)
+            if value is not None
+        ]
+        if not points:
+            continue
+        output[key] = {
+            "dates": [f"{year}-12-31" for year, _ in points],
+            "values": [normalise_number(value) for _, value in points],
+            "kinds": ["fact" if year in fact_years else "forecast" for year, _ in points],
+            "forecast_start_year": next(
+                (year for year, _ in points if year not in fact_years), None
+            ),
+        }
+    missing = set(MACRO_SURVEY_LABELS).difference(output)
+    if missing:
+        raise RuntimeError(f"ЦБ РФ: в макроэкономическом опросе не найдены {', '.join(sorted(missing))}")
+    return output
+
+
+def fetch_cbr_macro_survey() -> dict[str, dict[str, Any]]:
+    return parse_cbr_macro_survey_html(get(CBR_MACRO_SURVEY_URL).text)
+
+
 def fetch_moex(secid: str) -> tuple[list[str], list[float | int]]:
     rows: list[tuple[date, float]] = []
     start = 0
@@ -3389,6 +3761,105 @@ SERIES_DEFAULTS: dict[str, dict[str, Any]] = {
     },
 }
 
+SERIES_DEFAULTS.update(
+    {
+        "erai_composite": {
+            "title": "Композитный индекс ERAI",
+            "subtitle": "ставка транзита Китай — Европа, FEU",
+            "chart_label": "Композитный индекс ERAI, USD/FEU",
+            "unit": "USD/FEU",
+            "source": "ERAI",
+            "source_url": INDEX1520_URL,
+            "value_decimals": 0,
+            "change_decimals": 0,
+            "change_type": "raw",
+            "change_labels": ["м/м", "3 мес.", "г/г"],
+            "change_days": ["previous", 93, 365],
+            "frequency": "monthly",
+            "page": "erai",
+            "dates": [],
+            "values": [],
+            "empty_message": "Ряд появится после первого успешного чтения графика index1520.com.",
+        },
+        "wci_composite": {
+            "title": "WCI Drewry",
+            "subtitle": "мировой индекс контейнерных ставок",
+            "chart_label": "Drewry World Container Index, US$/40ft",
+            "unit": "US$/40ft",
+            "source": "Drewry",
+            "source_url": DREWRY_WCI_URL,
+            "value_decimals": 0,
+            "change_decimals": 0,
+            "change_type": "raw",
+            "change_labels": ["н/н", "м/м", "г/г"],
+            "change_days": ["previous", 31, 365],
+            "frequency": "weekly",
+            "page": "wci",
+            "dates": [],
+            "values": [],
+            "methodology_note": (
+                "Открытая ретроспектива официальных графиков начинается 10.07.2025. "
+                "Оперборд сохраняет загруженные точки при последующих обновлениях."
+            ),
+            "empty_message": "Ряд появится после первого успешного чтения графика Drewry.",
+        },
+        "wci_shanghai_rotterdam": {
+            "title": "Шанхай — Роттердам",
+            "chart_label": "WCI: Shanghai to Rotterdam",
+            "unit": "US$/40ft", "source": "Drewry", "source_url": DREWRY_WCI_URL,
+            "value_decimals": 0, "frequency": "weekly", "page": "wci",
+            "dates": [], "values": [],
+        },
+        "wci_shanghai_genoa": {
+            "title": "Шанхай — Генуя",
+            "chart_label": "WCI: Shanghai to Genoa",
+            "unit": "US$/40ft", "source": "Drewry", "source_url": DREWRY_WCI_URL,
+            "value_decimals": 0, "frequency": "weekly", "page": "wci",
+            "dates": [], "values": [],
+        },
+        "wci_shanghai_los_angeles": {
+            "title": "Шанхай — Лос-Анджелес",
+            "chart_label": "WCI: Shanghai to Los Angeles",
+            "unit": "US$/40ft", "source": "Drewry", "source_url": DREWRY_WCI_URL,
+            "value_decimals": 0, "frequency": "weekly", "page": "wci",
+            "dates": [], "values": [],
+        },
+        "wci_shanghai_new_york": {
+            "title": "Шанхай — Нью-Йорк",
+            "chart_label": "WCI: Shanghai to New York",
+            "unit": "US$/40ft", "source": "Drewry", "source_url": DREWRY_WCI_URL,
+            "value_decimals": 0, "frequency": "weekly", "page": "wci",
+            "dates": [], "values": [],
+        },
+    }
+)
+
+_MACRO_SURVEY_DEFAULTS = {
+    "macro_survey_cpi": ("ИПЦ: факт и прогноз", "ИПЦ, декабрь к декабрю предыдущего года", "%"),
+    "macro_survey_key_rate": ("Ключевая ставка: факт и прогноз", "Средняя ключевая ставка за год", "%"),
+    "macro_survey_gdp": ("ВВП: факт и прогноз", "Темп роста ВВП, год к году", "%"),
+    "macro_survey_exports": ("Экспорт товаров и услуг: факт и прогноз", "Экспорт товаров и услуг", "млрд $"),
+    "macro_survey_imports": ("Импорт товаров и услуг: факт и прогноз", "Импорт товаров и услуг", "млрд $"),
+    "macro_survey_usdrub": ("USD/RUB: факт и прогноз", "Средний курс USD/RUB за год", "₽/$"),
+    "macro_survey_oil": ("Нефть для налогообложения: факт и прогноз", "Средняя цена нефти для налогообложения", "$/барр."),
+}
+for _key, (_title, _label, _unit) in _MACRO_SURVEY_DEFAULTS.items():
+    SERIES_DEFAULTS[_key] = {
+        "title": _title,
+        "subtitle": "Макроэкономический опрос Банка России",
+        "chart_label": _label,
+        "unit": _unit,
+        "source": "Банк России",
+        "source_url": CBR_MACRO_SURVEY_URL,
+        "value_decimals": 1,
+        "frequency": "annual",
+        "dates": [],
+        "values": [],
+        "kinds": [],
+        "forecast_start_year": None,
+        "empty_message": "Прогноз появится после первого успешного обновления опроса.",
+    }
+
 
 def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
     payload.setdefault("series", {})
@@ -3407,7 +3878,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
                 "message": payload["series"][key].get("empty_message", "Ожидает обновления"),
             },
         )
-    # v7.10 uses current public Rosstat workbooks with a restricted TLS fallback. Source and
+    # The current build uses public Rosstat workbooks with a restricted TLS fallback. Source and
     # methodology metadata are intentionally refreshed in older payloads.
     for key in ("production_index", "road_freight"):
         series = payload["series"][key]
@@ -3425,7 +3896,7 @@ def ensure_series_defaults(payload: dict[str, Any]) -> dict[str, Any]:
             series[field] = json.loads(
                 json.dumps(SERIES_DEFAULTS[key][field], ensure_ascii=False)
             )
-    payload["schema_version"] = max(int(payload.get("schema_version", 1)), 6)
+    payload["schema_version"] = max(int(payload.get("schema_version", 1)), 7)
     return payload
 
 
@@ -3547,6 +4018,42 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
             }
             log(f"[refresh] {key}: ERROR: {message}")
 
+    logistics_keys = (
+        "erai_composite", "wci_composite", "wci_shanghai_rotterdam",
+        "wci_shanghai_genoa", "wci_shanghai_los_angeles", "wci_shanghai_new_york",
+    )
+    log("[refresh] ERAI / Drewry WCI: loading rendered charts…")
+    logistics_results, logistics_errors = fetch_logistics_indices()
+    for key in logistics_keys:
+        if key in logistics_results:
+            try:
+                dates, values = logistics_results[key]
+                result = merge_numeric_series(updated["series"][key], dates, values)
+                updated["series"][key]["dates"] = result["dates"]
+                updated["series"][key]["values"] = result["values"]
+                updated["status"][key] = status_ok(result, "Обновлено из официального графика")
+                successes += 1
+                actual_changes += int(result["changed_points"])
+                log(
+                    f"[refresh] {key}: OK; fetched_latest={result['fetched_latest']}; "
+                    f"new={result['new_points']}; changed={result['changed_points']}"
+                )
+            except Exception as exc:  # noqa: BLE001
+                message = str(exc)[:1000]
+                failures[key] = message
+                updated["status"][key] = status_source_error(
+                    updated["status"].get(key), updated["series"][key], message
+                )
+                log(f"[refresh] {key}: ERROR: {message}")
+        else:
+            source_key = "erai_composite" if key == "erai_composite" else "wci_composite"
+            message = logistics_errors.get(source_key, "график не распознан")[:1000]
+            failures[key] = message
+            updated["status"][key] = status_source_error(
+                updated["status"].get(key), updated["series"][key], message
+            )
+            log(f"[refresh] {key}: ERROR: {message}")
+
     if rosstat_refresh_due(updated["status"].get("road_freight")):
         log("[refresh] road_freight: loading Rosstat workbook…")
         try:
@@ -3635,6 +4142,41 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
             }
         log(f"[refresh] CBR foreign trade: ERROR: {message}")
 
+    log("[refresh] CBR macro survey: loading current fact and forecast…")
+    try:
+        survey_results = fetch_cbr_macro_survey()
+        for key, fetched in survey_results.items():
+            previous = updated["series"][key]
+            before = dict(zip(previous.get("dates", []), previous.get("values", [])))
+            after = dict(zip(fetched["dates"], fetched["values"]))
+            changed = sum(1 for period, value in after.items() if before.get(period) != value)
+            new_points = sum(1 for period in after if period not in before)
+            for field in ("dates", "values", "kinds", "forecast_start_year"):
+                updated["series"][key][field] = fetched[field]
+            result = {
+                "fetched_latest": fetched["dates"][-1],
+                "merged_latest": fetched["dates"][-1],
+                "new_points": new_points,
+                "changed_points": changed,
+            }
+            updated["status"][key] = status_ok(
+                result, "Обновлено из макроэкономического опроса Банка России"
+            )
+            successes += 1
+            actual_changes += changed
+            log(
+                f"[refresh] {key}: OK; forecast_through={fetched['dates'][-1]}; "
+                f"new={new_points}; changed={changed}"
+            )
+    except Exception as exc:  # noqa: BLE001
+        message = str(exc)[:1000]
+        for key in MACRO_SURVEY_LABELS:
+            failures[key] = message
+            updated["status"][key] = status_source_error(
+                updated["status"].get(key), updated["series"][key], message
+            )
+        log(f"[refresh] CBR macro survey: ERROR: {message}")
+
     log("[refresh] ProFinance: loading rendered tables…")
     profinance_results, profinance_errors = fetch_all_profinance()
     for key in PROFINANCE:
@@ -3697,10 +4239,14 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         }
         log(f"[refresh] hormuz: ERROR: {message}")
 
-    total = len(request_jobs) + 2 + 2 + len(PROFINANCE) + 1
+    total = (
+        len(request_jobs) + len(logistics_keys) + 2 + 2
+        + len(MACRO_SURVEY_LABELS) + len(PROFINANCE) + 1
+    )
     latest_dates = [
         series["dates"][-1]
-        for series in updated.get("series", {}).values()
+        for key, series in updated.get("series", {}).items()
+        if not key.startswith("macro_survey_")
         if isinstance(series, dict) and series.get("dates")
     ]
     updated["generated_at"] = now_iso()

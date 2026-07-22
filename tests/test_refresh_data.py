@@ -42,6 +42,72 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(result["exports"], (["2025-01-31", "2025-02-28"], [40.5, 41]))
         self.assertEqual(result["imports"], (["2025-01-31", "2025-02-28"], [25.25, 26]))
 
+    def test_erai_chart_payload_selects_composite_monthly_series(self) -> None:
+        charts = [
+            {
+                "title": "ERAI",
+                "labels": [f"{month:02d}.2025" for month in range(1, 7)],
+                "datasets": [
+                    {"label": "ERAI East", "data": [2000] * 6},
+                    {"label": "Композитный индекс ERAI", "data": [3100, 3120, 3110, 3150, 3180, 3200]},
+                ],
+            }
+        ]
+        dates, values = refresh_data.parse_erai_chart_payload(charts)
+        self.assertEqual(dates[0], "2025-01-31")
+        self.assertEqual(dates[-1], "2025-06-30")
+        self.assertEqual(values[-1], 3200)
+
+    def test_canva_wci_svg_geometry_is_converted_to_weekly_values(self) -> None:
+        svg = """
+        <svg>
+          <g><circle fill="#243a50"/><text>World Container Index (WCI) Composite Index</text></g>
+          <circle aria-valuetext="10-Jul-25"/><circle aria-valuetext="24-Jul-25"/>
+          <line y1="500" y2="500" stroke="rgba(0,0,0,0.6)"/>
+          <line y1="0" y2="0" stroke="rgba(0,0,0,0.25)"/>
+          <text>$0</text><text>$5</text>
+          <path stroke="#243a50" fill="none" d="M 10 400 C 10 400 20 350 30 300"/>
+          <path stroke="#243a50" fill="none" d="M 30 300 C 30 300 40 150 50 100"/>
+        </svg>
+        """
+        result = refresh_data.parse_canva_wci_svg(svg)["wci_composite"]
+        self.assertEqual(result[0], ["2025-07-10", "2025-07-17", "2025-07-24"])
+        self.assertEqual(result[1], [1000, 2000, 4000])
+
+    def test_canva_wci_svg_uses_ticks_across_holiday_gap(self) -> None:
+        svg = """
+        <svg>
+          <g><circle fill="#243a50"/><text>World Container Index (WCI) Composite Index</text></g>
+          <circle aria-valuetext="25-Dec-25"/><circle aria-valuetext="15-Jan-26"/>
+          <text>25-Dec-25</text><text>15-Jan-26</text>
+          <line y1="500" y2="500" stroke="rgba(0,0,0,0.6)"/>
+          <line y1="0" y2="0" stroke="rgba(0,0,0,0.25)"/>
+          <text>$0</text><text>$5</text>
+          <path stroke="#243a50" fill="none" d="M 10 400 C 10 400 20 350 30 300"/>
+          <path stroke="#243a50" fill="none" d="M 30 300 C 30 300 40 150 50 100"/>
+        </svg>
+        """
+        result = refresh_data.parse_canva_wci_svg(svg)["wci_composite"]
+        self.assertEqual(result[0], ["2025-12-25", "2026-01-08", "2026-01-15"])
+
+    def test_cbr_macro_survey_ignores_previous_month_in_parentheses(self) -> None:
+        html = """
+        <table>
+          <tr><th>Показатель</th><th>2024 (факт)</th><th>2025 (факт)</th><th>2026</th><th>2027</th></tr>
+          <tr><td>ИПЦ (в % дек. к дек. пред. года)</td><td>9,5</td><td>5,6</td><td>6,2 (5,3)</td><td>4,6 (4,4)</td></tr>
+          <tr><td>Ключевая ставка (в % годовых, в среднем за год)</td><td>17,5</td><td>19,2</td><td>14,5 (14,1)</td><td>12,2 (10,6)</td></tr>
+          <tr><td>ВВП (%, г/г)</td><td>4,9</td><td>1,0</td><td>0,6 (0,7)</td><td>1,3 (1,5)</td></tr>
+          <tr><td>Экспорт товаров и услуг (млрд долл. США в год)</td><td>477</td><td>468</td><td>510 (525)</td><td>483 (493)</td></tr>
+          <tr><td>Импорт товаров и услуг (млрд долл. США в год)</td><td>383</td><td>400</td><td>420 (420)</td><td>430 (432)</td></tr>
+          <tr><td>Курс USD/RUB (руб. за долл., в среднем за год)</td><td>92,4</td><td>83,4</td><td>78,4 (78,1)</td><td>86,6 (86,2)</td></tr>
+          <tr><td>Цена нефти для налогообложения (долл. США за баррель)</td><td>68</td><td>56</td><td>63 (70)</td><td>58 (60)</td></tr>
+        </table>
+        """
+        result = refresh_data.parse_cbr_macro_survey_html(html)
+        self.assertEqual(result["macro_survey_cpi"]["values"], [9.5, 5.6, 6.2, 4.6])
+        self.assertEqual(result["macro_survey_cpi"]["kinds"], ["fact", "fact", "forecast", "forecast"])
+        self.assertEqual(result["macro_survey_usdrub"]["values"][-1], 86.6)
+
     def test_parse_fedstat_filter_metadata(self) -> None:
         html = """
         <html><h1>Тестовый показатель</h1><script>
