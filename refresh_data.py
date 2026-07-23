@@ -79,6 +79,9 @@ ROSSTAT_PRODUCTION_TITLE = (
 ROSSTAT_ROAD_TITLE = "Перевезено грузов автомобильным транспортом"
 ATI_HISTORY_URL = "https://api.ati.su/index/license/v1/general_index_dynamic"
 INDEX1520_URL = "https://index1520.com/"
+INDEX1520_QUOTES_URL = (
+    "https://index1520.com/ajax/index-quotes.php?page=main&lang=ru"
+)
 DREWRY_WCI_URL = (
     "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/"
     "world-container-index-assessed-by-drewry"
@@ -2905,6 +2908,120 @@ def _month_end_from_chart_label(value: Any) -> date | None:
     return None
 
 
+def parse_erai_quotes_payload(
+    payload: dict[str, Any],
+    *,
+    reference_date: date | None = None,
+) -> tuple[list[str], list[float | int]]:
+    """Extract the complete monthly ERAI Composite series from the site's JSON."""
+    indexes = payload.get("indexes")
+    if not isinstance(indexes, dict):
+        raise RuntimeError("ERAI JSON: отсутствует объект indexes")
+    labels_block = indexes.get("labels")
+    datasets_block = indexes.get("datasets")
+    labels = labels_block.get("month") if isinstance(labels_block, dict) else None
+    datasets = datasets_block.get("month") if isinstance(datasets_block, dict) else None
+    if not isinstance(labels, list) or not isinstance(datasets, list):
+        raise RuntimeError("ERAI JSON: отсутствуют месячные метки или ряды")
+
+    composite: dict[str, Any] | None = None
+    for dataset in datasets:
+        if not isinstance(dataset, dict):
+            continue
+        label = _normalise_header(dataset.get("label"))
+        if (
+            "erai" in label
+            and ("композит" in label or "composite" in label)
+            and "east" not in label
+            and "west" not in label
+        ):
+            composite = dataset
+            break
+    if composite is None:
+        available = ", ".join(
+            str(item.get("label") or "без подписи")[:60]
+            for item in datasets
+            if isinstance(item, dict)
+        )
+        raise RuntimeError(
+            "ERAI JSON: ряд «ERAI Композитный» не найден; "
+            f"доступные ряды: {available or 'нет'}"
+        )
+
+    raw_values = composite.get("data")
+    predicted = composite.get("predicted")
+    if not isinstance(raw_values, list) or not raw_values:
+        raise RuntimeError("ERAI JSON: месячный ряд композитного индекса пуст")
+    if len(labels) != len(raw_values):
+        raise RuntimeError(
+            "ERAI JSON: число месячных меток и значений не совпадает "
+            f"({len(labels)} и {len(raw_values)})"
+        )
+
+    last_month = _month_number(labels[-1])
+    if last_month is None:
+        raise RuntimeError(
+            f"ERAI JSON: не распознан последний месяц «{labels[-1]}»"
+        )
+    today = reference_date or date.today()
+    anchor_year = today.year if last_month <= today.month else today.year - 1
+    anchor_index = anchor_year * 12 + last_month - 1
+
+    rows: list[tuple[date, float]] = []
+    for index, (label, raw_value) in enumerate(zip(labels, raw_values)):
+        if (
+            isinstance(predicted, list)
+            and index < len(predicted)
+            and bool(predicted[index])
+        ):
+            continue
+        month_index = anchor_index - (len(labels) - 1 - index)
+        year_value, zero_based_month = divmod(month_index, 12)
+        month_value = zero_based_month + 1
+        label_month = _month_number(label)
+        if label_month != month_value:
+            raise RuntimeError(
+                "ERAI JSON: нарушена последовательность месяцев "
+                f"у метки «{label}»"
+            )
+        number = to_number(raw_value)
+        if number is None:
+            continue
+        rows.append(
+            (
+                date(
+                    year_value,
+                    month_value,
+                    calendar.monthrange(year_value, month_value)[1],
+                ),
+                number,
+            )
+        )
+
+    dates, values = pack_series(rows)
+    validate_numeric_series(dates, values, "ERAI — официальный JSON")
+    return dates, values
+
+
+def fetch_erai_composite_json() -> tuple[list[str], list[float | int]]:
+    """Load ERAI from the same official JSON request used by index1520.com."""
+    response = get(
+        INDEX1520_QUOTES_URL,
+        headers={
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Referer": INDEX1520_URL,
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    )
+    try:
+        payload = response.json()
+    except (requests.exceptions.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError("ERAI JSON: источник вернул некорректный JSON") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("ERAI JSON: корневой объект имеет неверный формат")
+    return parse_erai_quotes_payload(payload)
+
+
 def parse_erai_chart_payload(
     charts: list[dict[str, Any]],
     expected_latest: float | None = None,
@@ -3268,17 +3385,29 @@ def fetch_drewry_wci(browser: Browser) -> dict[str, tuple[list[str], list[float 
 def fetch_logistics_indices() -> tuple[
     dict[str, tuple[list[str], list[float | int]]], dict[str, str]
 ]:
-    if sync_playwright is None:
-        return {}, {"erai_composite": "Playwright не установлен", "wci_composite": "Playwright не установлен"}
     results: dict[str, tuple[list[str], list[float | int]]] = {}
     errors: dict[str, str] = {}
+    try:
+        results["erai_composite"] = fetch_erai_composite_json()
+    except Exception as exc:  # noqa: BLE001
+        errors["erai_composite"] = f"официальный JSON: {exc}"
+
+    if sync_playwright is None:
+        errors["wci_composite"] = "Playwright не установлен"
+        return results, errors
+
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            try:
-                results["erai_composite"] = fetch_erai_composite(browser)
-            except Exception as exc:  # noqa: BLE001
-                errors["erai_composite"] = str(exc)
+            if "erai_composite" not in results:
+                try:
+                    results["erai_composite"] = fetch_erai_composite(browser)
+                    errors.pop("erai_composite", None)
+                except Exception as exc:  # noqa: BLE001
+                    previous = errors.get("erai_composite", "")
+                    errors["erai_composite"] = (
+                        f"{previous}; резервный график: {exc}".strip("; ")
+                    )
             try:
                 results.update(fetch_drewry_wci(browser))
             except Exception as exc:  # noqa: BLE001
@@ -4157,7 +4286,7 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         "erai_composite", "wci_composite", "wci_shanghai_rotterdam",
         "wci_shanghai_genoa", "wci_shanghai_los_angeles", "wci_shanghai_new_york",
     )
-    log("[refresh] ERAI / Drewry WCI: loading rendered charts…")
+    log("[refresh] ERAI official JSON / Drewry WCI charts: loading…")
     logistics_results, logistics_errors = fetch_logistics_indices()
     for key in logistics_keys:
         if key in logistics_results:
@@ -4166,7 +4295,12 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
                 result = merge_numeric_series(updated["series"][key], dates, values)
                 updated["series"][key]["dates"] = result["dates"]
                 updated["series"][key]["values"] = result["values"]
-                updated["status"][key] = status_ok(result, "Обновлено из официального графика")
+                source_message = (
+                    "Обновлено из официального JSON index1520.com"
+                    if key == "erai_composite"
+                    else "Обновлено из официального графика"
+                )
+                updated["status"][key] = status_ok(result, source_message)
                 successes += 1
                 actual_changes += int(result["changed_points"])
                 log(

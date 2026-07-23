@@ -113,6 +113,103 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(dates[-1], "2025-06-30")
         self.assertEqual(values[-1], 3200)
 
+    def test_erai_official_json_selects_composite_and_restores_years(self) -> None:
+        payload = {
+            "indexes": {
+                "labels": {
+                    "month": ["Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
+                },
+                "datasets": {
+                    "month": [
+                        {"label": "ERAI East", "data": [2600] * 7},
+                        {
+                            "label": "ERAI Композитный",
+                            "data": [3600, 3610, 3620, 3630, 3640, 3697, 3704],
+                            "predicted": [False] * 7,
+                        },
+                        {"label": "WCI Drewry", "data": [2000] * 7},
+                    ]
+                },
+            }
+        }
+        dates, values = refresh_data.parse_erai_quotes_payload(
+            payload,
+            reference_date=date(2026, 7, 23),
+        )
+        self.assertEqual(dates[0], "2025-12-31")
+        self.assertEqual(dates[-1], "2026-06-30")
+        self.assertEqual(values[-1], 3704)
+
+    def test_erai_official_json_excludes_predicted_points(self) -> None:
+        payload = {
+            "indexes": {
+                "labels": {"month": ["Апр", "Май", "Июн"]},
+                "datasets": {
+                    "month": [
+                        {
+                            "label": "ERAI Composite",
+                            "data": [3650, 3697, 3710],
+                            "predicted": [False, False, True],
+                        }
+                    ]
+                },
+            }
+        }
+        dates, values = refresh_data.parse_erai_quotes_payload(
+            payload,
+            reference_date=date(2026, 7, 23),
+        )
+        self.assertEqual(dates, ["2026-04-30", "2026-05-31"])
+        self.assertEqual(values, [3650, 3697])
+
+    def test_erai_fetch_uses_official_json_endpoint(self) -> None:
+        response = MagicMock()
+        response.json.return_value = {
+            "indexes": {
+                "labels": {"month": ["Апр", "Май", "Июн"]},
+                "datasets": {
+                    "month": [
+                        {
+                            "label": "ERAI Композитный",
+                            "data": [3650, 3697, 3704],
+                            "predicted": [False, False, False],
+                        }
+                    ]
+                },
+            }
+        }
+        with patch.object(refresh_data, "get", return_value=response) as get_mock:
+            dates, values = refresh_data.fetch_erai_composite_json()
+        self.assertEqual(dates[-1][-5:], "06-30")
+        self.assertEqual(values[-1], 3704)
+        self.assertEqual(get_mock.call_args.args[0], refresh_data.INDEX1520_QUOTES_URL)
+        self.assertEqual(
+            get_mock.call_args.kwargs["headers"]["X-Requested-With"],
+            "XMLHttpRequest",
+        )
+
+    def test_erai_json_does_not_require_playwright(self) -> None:
+        expected = (["2026-06-30"], [3704])
+        with patch.object(refresh_data, "sync_playwright", None):
+            with patch.object(
+                refresh_data,
+                "fetch_erai_composite_json",
+                return_value=expected,
+            ):
+                results, errors = refresh_data.fetch_logistics_indices()
+        self.assertEqual(results["erai_composite"], expected)
+        self.assertNotIn("erai_composite", errors)
+        self.assertEqual(errors["wci_composite"], "Playwright не установлен")
+
+    def test_dashboard_has_raw_default_and_no_forbidden_abbreviation(self) -> None:
+        html = (refresh_data.ROOT / "index.html").read_text(encoding="utf-8")
+        forbidden = "анал" + "."
+        self.assertNotIn(forbidden, html.lower())
+        self.assertIn("['raw','Исходные данные']", html)
+        self.assertIn("['monthly','Среднее за месяц']", html)
+        self.assertIn("['annual','Среднее за год']", html)
+        self.assertIn("state.frequency[page]||(page==='road_freight'?'monthly':'raw')", html)
+
     def test_canva_wci_svg_geometry_is_converted_to_weekly_values(self) -> None:
         svg = """
         <svg>
