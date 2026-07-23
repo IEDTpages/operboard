@@ -2905,7 +2905,10 @@ def _month_end_from_chart_label(value: Any) -> date | None:
     return None
 
 
-def parse_erai_chart_payload(charts: list[dict[str, Any]]) -> tuple[list[str], list[float | int]]:
+def parse_erai_chart_payload(
+    charts: list[dict[str, Any]],
+    expected_latest: float | None = None,
+) -> tuple[list[str], list[float | int]]:
     """Extract the monthly composite ERAI row from rendered Chart.js instances."""
     candidates: list[tuple[int, list[tuple[date, float]]]] = []
     for chart in charts:
@@ -2918,10 +2921,19 @@ def parse_erai_chart_payload(charts: list[dict[str, Any]]) -> tuple[list[str], l
             if not isinstance(dataset, dict):
                 continue
             label = _normalise_header(dataset.get("label"))
-            context = f"{title} {label}".strip()
+            location = _normalise_header(chart.get("location"))
+            context = f"{title} {label} {location}".strip()
             if any(word in context for word in ("erai east", "erai west", "wci", "transit", "время", "скорост")):
                 continue
-            if "erai" not in context and "индекс" not in context and "index" not in context:
+            # The live index1520 chart currently renders its only dataset without
+            # a label/title.  Such a dataset is still safe to consider because
+            # transit time and speed are excluded by the value range below.
+            if (
+                context
+                and "erai" not in context
+                and "индекс" not in context
+                and "index" not in context
+            ):
                 continue
             raw_values = dataset.get("data")
             if not isinstance(raw_values, list):
@@ -2931,17 +2943,52 @@ def parse_erai_chart_payload(charts: list[dict[str, Any]]) -> tuple[list[str], l
                 item_label = labels[index] if index < len(labels) else None
                 raw_value = item
                 if isinstance(item, dict):
-                    item_label = item.get("x") or item.get("date") or item_label
+                    item_label = (
+                        item.get("x")
+                        or item.get("t")
+                        or item.get("date")
+                        or item.get("label")
+                        or item_label
+                    )
                     raw_value = item.get("y") if "y" in item else item.get("value")
+                elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                    item_label, raw_value = item[0], item[1]
                 period = _month_end_from_chart_label(item_label)
                 value = to_number(raw_value)
                 if period and value is not None and 100 <= value <= 100_000:
                     points.append((period, value))
             if len(points) >= 6:
-                score = len(points) + (1000 if "erai" in context else 0)
+                score = len(points)
+                if "erai" in context:
+                    score += 1000
+                if "композит" in context or "composite" in context:
+                    score += 2000
+                if expected_latest is not None and points[-1][1]:
+                    relative_error = abs(points[-1][1] - expected_latest) / expected_latest
+                    if relative_error <= 0.01:
+                        score += 5000
+                    elif relative_error <= 0.05:
+                        score += 2500
                 candidates.append((score, points))
     if not candidates:
-        raise RuntimeError("ERAI: в Chart.js не найден месячный ряд композитного индекса")
+        diagnostics: list[str] = []
+        for chart in charts[:8]:
+            labels = chart.get("labels") if isinstance(chart, dict) else []
+            datasets = chart.get("datasets") if isinstance(chart, dict) else []
+            dataset_info = ",".join(
+                f"{str(item.get('label') or 'без подписи')[:40]}:{len(item.get('data') or [])}"
+                for item in datasets[:6]
+                if isinstance(item, dict)
+            )
+            diagnostics.append(
+                f"{str(chart.get('title') or chart.get('location') or 'без заголовка')[:60]}"
+                f"[меток={len(labels) if isinstance(labels, list) else 0}; ряды={dataset_info or 'нет'}]"
+            )
+        details = "; ".join(diagnostics) if diagnostics else "экземпляры графика не обнаружены"
+        raise RuntimeError(
+            "ERAI: в отрисованных графиках не найден месячный ряд композитного индекса; "
+            f"диагностика: {details}"
+        )
     _, points = max(candidates, key=lambda item: item[0])
     dates, values = pack_series(points)
     validate_numeric_series(dates, values, "ERAI — композитный индекс")
@@ -2951,17 +2998,87 @@ def parse_erai_chart_payload(charts: list[dict[str, Any]]) -> tuple[list[str], l
 def _rendered_chart_instances(page: Page) -> list[dict[str, Any]]:
     return page.evaluate(
         """() => {
-          const instances = window.Chart && window.Chart.instances
-            ? Object.values(window.Chart.instances) : [];
-          return instances.map(chart => ({
+          const found = [];
+          const seen = new Set();
+          const add = chart => {
+            if (!chart || typeof chart !== 'object' || seen.has(chart)) return;
+            const data = chart.data || chart.config?.data;
+            if (!data || !Array.isArray(data.datasets)) return;
+            seen.add(chart);
+            found.push(chart);
+          };
+          const registry = window.Chart && window.Chart.instances;
+          if (registry instanceof Map) {
+            Array.from(registry.values()).forEach(add);
+          } else if (registry) {
+            Object.values(registry).forEach(add);
+          }
+          if (window.Chart && typeof window.Chart.getChart === 'function') {
+            document.querySelectorAll('canvas').forEach(canvas => add(window.Chart.getChart(canvas)));
+          }
+          document.querySelectorAll('canvas').forEach(canvas => {
+            add(canvas.chart);
+            add(canvas._chart);
+            add(canvas.__chart);
+            let element = canvas;
+            for (let level = 0; element && level < 5; level++, element = element.parentElement) {
+              const root = element.__vue__;
+              if (!root) continue;
+              const queue = [root];
+              const visited = new Set();
+              while (queue.length && visited.size < 100) {
+                const component = queue.shift();
+                if (!component || visited.has(component)) continue;
+                visited.add(component);
+                add(component._chart);
+                add(component.chart);
+                (component.$children || []).forEach(child => queue.push(child));
+              }
+            }
+          });
+          return found.map(chart => {
+            const canvas = chart.canvas || chart.ctx?.canvas;
+            const holder = canvas?.parentElement;
+            const location = holder?.innerText || holder?.parentElement?.innerText || '';
+            const data = chart.data || chart.config?.data || {};
+            return {
             title: chart?.options?.title?.text || chart?.options?.plugins?.title?.text || '',
-            labels: chart?.data?.labels || [],
-            datasets: (chart?.data?.datasets || []).map(dataset => ({
+            location: String(location).slice(0, 500),
+            labels: data.labels || [],
+            datasets: (data.datasets || []).map(dataset => ({
               label: dataset.label || '', data: dataset.data || []
             }))
-          }));
+          }});
         }"""
     )
+
+
+def _erai_headline_value(page: Page) -> float | None:
+    """Read the current composite value displayed above the ERAI chart."""
+    body_text = page.locator("body").inner_text(timeout=20_000)
+    patterns = (
+        r"ERAI\s+EURASIAN\s+RAIL\s+ALLIANCE\s+INDEX\s+([\d\s.,]+)\s*USD",
+        r"(?:^|\n)INDEX\s+([\d\s.,]+)\s*USD",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, body_text, flags=re.IGNORECASE)
+        if match:
+            value = to_number(match.group(1))
+            if value is not None and 100 <= value <= 100_000:
+                return value
+    return None
+
+
+def _click_all_visible_exact_text(page: Page, label: str) -> None:
+    locator = page.get_by_text(label, exact=True)
+    for index in range(locator.count()):
+        item = locator.nth(index)
+        try:
+            if item.is_visible():
+                item.click(timeout=10_000)
+                page.wait_for_timeout(750)
+        except Exception:  # noqa: BLE001 - another responsive copy may be covered
+            continue
 
 
 def fetch_erai_composite(browser: Browser) -> tuple[list[str], list[float | int]]:
@@ -2970,15 +3087,11 @@ def fetch_erai_composite(browser: Browser) -> tuple[list[str], list[float | int]
         page.goto(INDEX1520_URL, wait_until="domcontentloaded", timeout=120_000)
         page.wait_for_selector("canvas", timeout=120_000)
         for label in ("Месяцы", "За все время"):
-            locator = page.get_by_text(label, exact=True)
-            if locator.count():
-                try:
-                    locator.first.click(timeout=10_000)
-                    page.wait_for_timeout(1_000)
-                except Exception:  # noqa: BLE001 - the chart may already be in this mode
-                    pass
+            _click_all_visible_exact_text(page, label)
+        page.wait_for_timeout(2_000)
+        expected_latest = _erai_headline_value(page)
         charts = _rendered_chart_instances(page)
-        return parse_erai_chart_payload(charts)
+        return parse_erai_chart_payload(charts, expected_latest=expected_latest)
     finally:
         page.close()
 

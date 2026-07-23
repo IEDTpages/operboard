@@ -58,6 +58,44 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(dates[-1], "2025-06-30")
         self.assertEqual(values[-1], 3200)
 
+    def test_erai_chart_payload_accepts_live_unlabelled_dataset(self) -> None:
+        charts = [
+            {
+                "title": "",
+                "location": "",
+                "labels": [f"{month:02d}.2025" for month in range(1, 7)],
+                "datasets": [
+                    {"label": "", "data": [3500, 3540, 3590, 3650, 3680, 3704]},
+                ],
+            }
+        ]
+        dates, values = refresh_data.parse_erai_chart_payload(
+            charts,
+            expected_latest=3704,
+        )
+        self.assertEqual(dates[-1], "2025-06-30")
+        self.assertEqual(values[-1], 3704)
+
+    def test_erai_chart_payload_accepts_xy_and_time_points(self) -> None:
+        charts = [
+            {
+                "title": "ERAI",
+                "labels": [],
+                "datasets": [
+                    {
+                        "label": "",
+                        "data": [
+                            {"t": f"2025-{month:02d}-15", "y": 3600 + month}
+                            for month in range(1, 7)
+                        ],
+                    }
+                ],
+            }
+        ]
+        dates, values = refresh_data.parse_erai_chart_payload(charts)
+        self.assertEqual(dates[0], "2025-01-31")
+        self.assertEqual(values[-1], 3606)
+
     def test_canva_wci_svg_geometry_is_converted_to_weekly_values(self) -> None:
         svg = """
         <svg>
