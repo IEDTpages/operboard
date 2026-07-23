@@ -2923,16 +2923,23 @@ def parse_erai_chart_payload(
             label = _normalise_header(dataset.get("label"))
             location = _normalise_header(chart.get("location"))
             context = f"{title} {label} {location}".strip()
-            if any(word in context for word in ("erai east", "erai west", "wci", "transit", "время", "скорост")):
+            # All comparison series share one canvas and surrounding legend.
+            # Reject competitors by the current dataset label/title, not by
+            # the container text (which also contains WCI and ERAI East/West).
+            dataset_context = f"{title} {label}".strip()
+            if any(
+                word in dataset_context
+                for word in ("erai east", "erai west", "wci", "transit", "время", "скорост")
+            ):
                 continue
             # The live index1520 chart currently renders its only dataset without
             # a label/title.  Such a dataset is still safe to consider because
             # transit time and speed are excluded by the value range below.
             if (
-                context
-                and "erai" not in context
-                and "индекс" not in context
-                and "index" not in context
+                dataset_context
+                and "erai" not in dataset_context
+                and "индекс" not in dataset_context
+                and "index" not in dataset_context
             ):
                 continue
             raw_values = dataset.get("data")
@@ -2959,9 +2966,9 @@ def parse_erai_chart_payload(
                     points.append((period, value))
             if len(points) >= 6:
                 score = len(points)
-                if "erai" in context:
+                if "erai" in dataset_context:
                     score += 1000
-                if "композит" in context or "composite" in context:
+                if "композит" in dataset_context or "composite" in dataset_context:
                     score += 2000
                 if expected_latest is not None and points[-1][1]:
                     relative_error = abs(points[-1][1] - expected_latest) / expected_latest
@@ -3329,6 +3336,20 @@ def parse_cbr_macro_survey_html(html: str) -> dict[str, dict[str, Any]]:
     if not fact_years and years:
         fact_years = {year for year in years if year < datetime.now().year}
 
+    release_date: date | None = None
+    page_text = soup.get_text(" ", strip=True)
+    release_patterns = (
+        r"(?:опубликован|обновлен|опрос|релиз)[^.\n]{0,100}?"
+        r"(\d{1,2}\s+[а-яё]+\s+20\d{2})",
+        r"(\d{1,2}\s+[а-яё]+\s+20\d{2})",
+        r"(\d{1,2}[./]\d{1,2}[./]20\d{2})",
+    )
+    for pattern in release_patterns:
+        match = re.search(pattern, page_text, flags=re.IGNORECASE)
+        if match and (parsed_release := parse_date(match.group(1))):
+            release_date = parsed_release
+            break
+
     output: dict[str, dict[str, Any]] = {}
     for key, (label, qualifier) in MACRO_SURVEY_LABELS.items():
         matched_row = None
@@ -3356,6 +3377,7 @@ def parse_cbr_macro_survey_html(html: str) -> dict[str, dict[str, Any]]:
             "forecast_start_year": next(
                 (year for year, _ in points if year not in fact_years), None
             ),
+            "survey_release_date": release_date.isoformat() if release_date else None,
         }
     missing = set(MACRO_SURVEY_LABELS).difference(output)
     if missing:
@@ -4264,7 +4286,13 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
             after = dict(zip(fetched["dates"], fetched["values"]))
             changed = sum(1 for period, value in after.items() if before.get(period) != value)
             new_points = sum(1 for period in after if period not in before)
-            for field in ("dates", "values", "kinds", "forecast_start_year"):
+            for field in (
+                "dates",
+                "values",
+                "kinds",
+                "forecast_start_year",
+                "survey_release_date",
+            ):
                 updated["series"][key][field] = fetched[field]
             result = {
                 "fetched_latest": fetched["dates"][-1],

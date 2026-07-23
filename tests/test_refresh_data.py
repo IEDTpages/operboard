@@ -96,6 +96,23 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(dates[0], "2025-01-31")
         self.assertEqual(values[-1], 3606)
 
+    def test_erai_composite_is_not_rejected_by_shared_wci_location(self) -> None:
+        charts = [
+            {
+                "title": "",
+                "location": "ERAI Композитный ERAI East ERAI West WCI Drewry",
+                "labels": [f"{month:02d}.2025" for month in range(1, 7)],
+                "datasets": [
+                    {"label": "ERAI Композитный", "data": [3100, 3120, 3110, 3150, 3180, 3200]},
+                    {"label": "ERAI East", "data": [2000] * 6},
+                    {"label": "WCI Drewry", "data": [1500] * 6},
+                ],
+            }
+        ]
+        dates, values = refresh_data.parse_erai_chart_payload(charts)
+        self.assertEqual(dates[-1], "2025-06-30")
+        self.assertEqual(values[-1], 3200)
+
     def test_canva_wci_svg_geometry_is_converted_to_weekly_values(self) -> None:
         svg = """
         <svg>
@@ -145,6 +162,24 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(result["macro_survey_cpi"]["values"], [9.5, 5.6, 6.2, 4.6])
         self.assertEqual(result["macro_survey_cpi"]["kinds"], ["fact", "fact", "forecast", "forecast"])
         self.assertEqual(result["macro_survey_usdrub"]["values"][-1], 86.6)
+
+    def test_cbr_macro_survey_keeps_release_date(self) -> None:
+        html = """
+        <html><body><p>Макроэкономический опрос опубликован 15 июля 2026 года</p>
+        <table>
+          <tr><th>Показатель</th><th>2023 (факт)</th><th>2024 (факт)</th>
+              <th>2025 (факт)</th><th>2026</th><th>2027</th></tr>
+          <tr><td>ИПЦ, % дек. к дек.</td><td>7,4</td><td>9,5</td><td>5,6</td><td>6,2</td><td>4,6</td></tr>
+          <tr><td>Ключевая ставка, % в среднем за год</td><td>9,9</td><td>17,5</td><td>19,2</td><td>14,5</td><td>12,2</td></tr>
+          <tr><td>ВВП, %, г/г</td><td>4,1</td><td>4,9</td><td>1,0</td><td>0,6</td><td>1,3</td></tr>
+          <tr><td>Экспорт товаров и услуг, млрд долл.</td><td>465</td><td>477</td><td>468</td><td>510</td><td>483</td></tr>
+          <tr><td>Импорт товаров и услуг, млрд долл.</td><td>380</td><td>383</td><td>400</td><td>420</td><td>430</td></tr>
+          <tr><td>Курс USD/RUB, руб.</td><td>84,7</td><td>92,4</td><td>83,4</td><td>78,4</td><td>86,6</td></tr>
+          <tr><td>Цена нефти для налогообложения, долл. за баррель</td><td>63</td><td>68</td><td>56</td><td>63</td><td>58</td></tr>
+        </table></body></html>
+        """
+        result = refresh_data.parse_cbr_macro_survey_html(html)
+        self.assertEqual(result["macro_survey_cpi"]["survey_release_date"], "2026-07-15")
 
     def test_parse_fedstat_filter_metadata(self) -> None:
         html = """
