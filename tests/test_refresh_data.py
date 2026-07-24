@@ -4,6 +4,7 @@ import io
 import os
 import unittest
 from datetime import date, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -12,7 +13,30 @@ import requests
 import refresh_data
 
 
+INDEX_HTML = Path(__file__).resolve().parents[1] / "index.html"
+
+
 class RefreshDataTests(unittest.TestCase):
+    def test_trade_and_road_charts_do_not_pass_undefined_trace_fields(self) -> None:
+        html = INDEX_HTML.read_text(encoding="utf-8")
+        self.assertNotIn("mode:annual?undefined", html)
+        self.assertNotIn("line:annual?undefined", html)
+        self.assertNotIn("marker:annual?{color}:undefined", html)
+        self.assertIn("return annual?{...common,type:'bar'", html)
+        self.assertIn("const trace=annual?{...common,type:'bar'", html)
+
+    def test_erai_frequency_filter_skips_redundant_monthly_average(self) -> None:
+        html = INDEX_HTML.read_text(encoding="utf-8")
+        self.assertIn(
+            "page==='erai'?[['raw','Исходные данные'],['annual','Среднее за год']]",
+            html,
+        )
+
+    def test_hormuz_chart_has_visible_total_in_hover(self) -> None:
+        html = INDEX_HTML.read_text(encoding="utf-8")
+        self.assertIn("name:'Всего',showlegend:false", html)
+        self.assertIn("<extra>Всего</extra>", html)
+
     def test_space_separated_us_date_is_parsed_without_pandas_warning(self) -> None:
         self.assertEqual(refresh_data.parse_date("07 16 2026"), date(2026, 7, 16))
 
