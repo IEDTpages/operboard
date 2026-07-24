@@ -210,6 +210,29 @@ class RefreshDataTests(unittest.TestCase):
         self.assertIn("['annual','Среднее за год']", html)
         self.assertIn("state.frequency[page]||(page==='road_freight'?'monthly':'raw')", html)
 
+    def test_dashboard_v84_chart_and_card_presentation_rules(self) -> None:
+        html = (refresh_data.ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("stepLine=page==='key'&&frequency==='raw'", html)
+        self.assertIn("shape:stepLine?'hv':'linear'", html)
+        self.assertIn("type:'scatter',mode:'lines'", html)
+        self.assertNotIn("mode:annual?undefined:'lines+markers'", html)
+        self.assertNotIn("mode:'lines+markers',", html)
+        self.assertIn("function drawHormuz()", html)
+        hormuz = html.split("function drawHormuz()", 1)[1].split(
+            "function bindRange", 1
+        )[0]
+        self.assertIn("type:'bar'", hormuz)
+        self.assertIn("barmode:'stack'", hormuz)
+        self.assertNotIn("type:annual?'bar':'scatter'", hormuz)
+        self.assertIn(
+            ".detail-grid>.chart-panel{display:flex;flex-direction:column;overflow:hidden}",
+            html,
+        )
+        self.assertIn(
+            ".change-value,.metric-box .val,.currency-change b{margin-top:auto",
+            html,
+        )
+
     def test_canva_wci_svg_geometry_is_converted_to_weekly_values(self) -> None:
         svg = """
         <svg>
