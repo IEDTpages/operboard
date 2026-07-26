@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-07-26T15:47:53+00:00",
+  "generated_at": "2026-07-26T20:06:07+00:00",
   "data_as_of": "2026-07-25",
   "source_mode": "web_refresh",
   "report": {
@@ -35688,7 +35688,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:21+00:00",
+      "updated_at": "2026-07-26T20:03:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35697,7 +35697,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:24+00:00",
+      "updated_at": "2026-07-26T20:03:25+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-20",
       "merged_latest": "2026-07-20",
@@ -35706,7 +35706,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:22+00:00",
+      "updated_at": "2026-07-26T20:03:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-25",
       "merged_latest": "2026-07-25",
@@ -35715,7 +35715,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:22+00:00",
+      "updated_at": "2026-07-26T20:03:24+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-25",
       "merged_latest": "2026-07-25",
@@ -35724,7 +35724,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:23+00:00",
+      "updated_at": "2026-07-26T20:03:24+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-25",
       "merged_latest": "2026-07-25",
@@ -35733,7 +35733,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35742,7 +35742,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35751,7 +35751,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35760,7 +35760,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35769,7 +35769,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35778,7 +35778,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:28+00:00",
+      "updated_at": "2026-07-26T20:03:30+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35787,7 +35787,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:31+00:00",
+      "updated_at": "2026-07-26T20:03:32+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-24",
       "merged_latest": "2026-07-24",
@@ -35796,7 +35796,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:47:53+00:00",
+      "updated_at": "2026-07-26T20:06:07+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-07-19",
       "merged_latest": "2026-07-19",
@@ -35813,22 +35813,14 @@
       "changed_points": 0
     },
     "exports": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:38+00:00",
-      "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
-      "fetched_latest": "2026-05-31",
-      "merged_latest": "2026-05-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "error",
+      "updated_at": "2026-07-26T20:03:46+00:00",
+      "message": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls"
     },
     "imports": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:38+00:00",
-      "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
-      "fetched_latest": "2026-05-31",
-      "merged_latest": "2026-05-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "error",
+      "updated_at": "2026-07-26T20:03:46+00:00",
+      "message": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls"
     },
     "road_freight": {
       "state": "ok",
@@ -35841,7 +35833,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:24+00:00",
+      "updated_at": "2026-07-26T20:03:26+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-07-25",
       "merged_latest": "2026-07-25",
@@ -35850,7 +35842,7 @@
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -35859,7 +35851,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-07-23",
       "merged_latest": "2026-07-23",
@@ -35868,7 +35860,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-07-23",
       "merged_latest": "2026-07-23",
@@ -35877,7 +35869,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-07-23",
       "merged_latest": "2026-07-23",
@@ -35886,7 +35878,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-07-23",
       "merged_latest": "2026-07-23",
@@ -35895,7 +35887,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-07-26T15:45:37+00:00",
+      "updated_at": "2026-07-26T20:03:39+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-07-23",
       "merged_latest": "2026-07-23",
@@ -35903,76 +35895,72 @@
       "changed_points": 0
     },
     "macro_survey_cpi": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_key_rate": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_gdp": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_exports": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_imports": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_usdrub": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     },
     "macro_survey_oil": {
-      "state": "ok",
-      "updated_at": "2026-07-26T15:45:39+00:00",
-      "message": "Обновлено из макроэкономического опроса Банка России",
-      "fetched_latest": "2029-12-31",
-      "merged_latest": "2029-12-31",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "stale",
+      "updated_at": "2026-07-26T20:03:56+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "last_success_at": "2026-07-26T15:45:39+00:00",
+      "merged_latest": "2029-12-31"
     }
   },
   "refresh_summary": {
-    "successes": 29,
-    "failures": 0,
+    "successes": 20,
+    "failures": 9,
     "skipped": 2,
     "total": 31,
     "actual_changed_points": 0,
-    "updated_at": "2026-07-26T15:47:53+00:00",
-    "failed_sources": {}
+    "updated_at": "2026-07-26T20:06:07+00:00",
+    "failed_sources": {
+      "exports": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
+      "imports": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
+      "macro_survey_cpi": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_key_rate": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_gdp": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_exports": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_imports": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_usdrub": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
+      "macro_survey_oil": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/"
+    }
   }
 }
