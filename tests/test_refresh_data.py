@@ -982,6 +982,22 @@ class RefreshDataTests(unittest.TestCase):
         )
         self.assertTrue(urls[0].endswith("PerevGruz_05-2026.xlsx"))
 
+    def test_rosstat_discovery_recognises_hyphenated_production_release(self) -> None:
+        html = f"""
+        <section>
+          <span>{refresh_data.ROSSTAT_PRODUCTION_TITLE}</span>
+          <a href='/storage/mediabank/ind_baza_2023_05-2026.xlsx'>XLSX</a>
+          <a href='/storage/mediabank/ind_baza_2023-06-2026.xlsx'>XLSX</a>
+        </section>
+        """
+        urls = refresh_data.discover_rosstat_xlsx_urls(
+            html,
+            refresh_data.ROSSTAT_INDUSTRIAL_URL,
+            refresh_data.ROSSTAT_PRODUCTION_TITLE,
+            preferred_context="базисный 2023 год",
+        )
+        self.assertTrue(urls[0].endswith("ind_baza_2023-06-2026.xlsx"))
+
     def test_rosstat_discovery_rejects_neighbouring_pogruzka_workbook(self) -> None:
         html = f"""
         <section>
@@ -1051,10 +1067,74 @@ class RefreshDataTests(unittest.TestCase):
             as_of=date(2026, 7, 21),
             lookback_months=3,
         )
-        self.assertTrue(production[0].endswith("ind_baza_2023_06-2026.xlsx"))
+        self.assertTrue(production[0].endswith("ind_baza_2023-06-2026.xlsx"))
+        self.assertTrue(production[1].endswith("ind_baza_2023_06-2026.xlsx"))
         self.assertIn(refresh_data.ROSSTAT_PRODUCTION_XLSX_CONFIRMED, production)
         self.assertTrue(road[0].endswith("PerevGruz_06-2026.xlsx"))
         self.assertIn(refresh_data.ROSSTAT_ROAD_XLSX_CONFIRMED, road)
+
+    def test_production_release_period_accepts_both_filename_separators(self) -> None:
+        hyphenated = (
+            "https://rosstat.gov.ru/storage/mediabank/"
+            "ind_baza_2023-06-2026.xlsx"
+        )
+        underscored = (
+            "https://rosstat.gov.ru/storage/mediabank/"
+            "ind_baza_2023_06-2026.xlsx"
+        )
+        expected = date(2026, 6, 30)
+        self.assertEqual(refresh_data._release_period_from_url(hyphenated), expected)
+        self.assertEqual(refresh_data._release_period_from_url(underscored), expected)
+
+    def test_hyphenated_june_production_release_is_parsed_end_to_end(self) -> None:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                frame = pd.DataFrame([[None] * 8 for _ in range(140)])
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:8] = [
+                        96 + offset + line_offset + month / 10
+                        for month in range(1, 7)
+                    ]
+                frame.to_excel(
+                    writer,
+                    sheet_name=sheet_number,
+                    index=False,
+                    header=False,
+                )
+
+        release_url = (
+            "https://rosstat.gov.ru/storage/mediabank/"
+            "ind_baza_2023-06-2026.xlsx"
+        )
+        with patch.dict(
+            os.environ,
+            {"ROSSTAT_PRODUCTION_XLSX_URL": release_url},
+            clear=True,
+        ):
+            with patch.object(
+                refresh_data,
+                "rosstat_monthly_workbook_candidates",
+                return_value=[],
+            ):
+                with patch.object(
+                    refresh_data,
+                    "_rosstat_page_candidates",
+                    return_value=[],
+                ):
+                    with patch.object(
+                        refresh_data,
+                        "_download_official_workbook",
+                        return_value=output.getvalue(),
+                    ):
+                        parsed = refresh_data.fetch_rosstat_production_history()
+
+        self.assertEqual(parsed["modes"]["mom"]["dates"][-1], "2026-06-30")
+        self.assertEqual(parsed["modes"]["mom"]["series"]["total"][-1], 96.6)
+        self.assertEqual(
+            parsed["modes"]["ytd_yoy"]["series"]["manufacturing"][-1],
+            100.6,
+        )
 
     def test_current_road_url_is_used_when_catalogue_page_is_unavailable(self) -> None:
         expected = (["2026-05-31"], [560.5])

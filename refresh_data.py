@@ -67,7 +67,7 @@ ROSSTAT_STORAGE_URL = "https://rosstat.gov.ru/storage/mediabank"
 ROSSTAT_PRODUCTION_FILENAME_PREFIX = "ind_baza_2023"
 ROSSTAT_ROAD_FILENAME_PREFIX = "PerevGruz"
 ROSSTAT_PRODUCTION_XLSX_CONFIRMED = (
-    f"{ROSSTAT_STORAGE_URL}/ind_baza_2023_05-2026.xlsx"
+    f"{ROSSTAT_STORAGE_URL}/ind_baza_2023-06-2026.xlsx"
 )
 ROSSTAT_ROAD_XLSX_CONFIRMED = (
     f"{ROSSTAT_STORAGE_URL}/PerevGruz_05-2026.xlsx"
@@ -2189,7 +2189,7 @@ def discover_rosstat_xlsx_urls(
             score += 60
         if target == _normalise_header(ROSSTAT_ROAD_TITLE) and "perev" in filename:
             score += 30
-        release_match = re.search(r"_(\d{2})-(20\d{2})\.xlsx?", filename)
+        release_match = re.search(r"[_-](\d{2})-(20\d{2})\.xlsx?", filename)
         release_rank = (
             int(release_match.group(2)) * 12 + int(release_match.group(1))
             if release_match
@@ -2224,9 +2224,16 @@ def rosstat_monthly_workbook_candidates(
     # then walk backwards through recent official naming variants.
     for offset in range(-1, -lookback_months - 1, -1):
         year, month = _shift_month(anchor.year, anchor.month, offset)
-        urls.append(
-            f"{ROSSTAT_STORAGE_URL}/{filename_prefix}_{month:02d}-{year}.xlsx"
+        separators = (
+            ("-", "_")
+            if filename_prefix == ROSSTAT_PRODUCTION_FILENAME_PREFIX
+            else ("_",)
         )
+        for separator in separators:
+            urls.append(
+                f"{ROSSTAT_STORAGE_URL}/{filename_prefix}"
+                f"{separator}{month:02d}-{year}.xlsx"
+            )
     urls.append(confirmed_url)
     return list(dict.fromkeys(urls))
 
@@ -2298,7 +2305,11 @@ def _production_cell_summary(content: bytes) -> str:
 
 def _release_period_from_url(url: str) -> date | None:
     filename = urlparse(url).path.rsplit("/", 1)[-1]
-    match = re.search(r"_(\d{2})-(20\d{2})\.xlsx?$", filename, re.IGNORECASE)
+    match = re.search(
+        r"[_-](\d{2})-(20\d{2})\.xlsx?$",
+        filename,
+        re.IGNORECASE,
+    )
     if not match:
         return None
     month, year = int(match.group(1)), int(match.group(2))
