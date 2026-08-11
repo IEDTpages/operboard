@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-08-11T05:46:30+00:00",
+  "generated_at": "2026-08-11T06:43:44+00:00",
   "data_as_of": "2026-08-11",
   "source_mode": "web_refresh",
   "report": {
@@ -14455,7 +14455,7 @@
         82.41,
         84.41,
         87.88,
-        87.8
+        88.91
       ]
     },
     "urals": {
@@ -17936,7 +17936,7 @@
         77.88,
         79.88,
         84.5,
-        84.44
+        82.87
       ]
     },
     "ttf": {
@@ -20879,7 +20879,7 @@
         648.74,
         670.04,
         737.73,
-        739.57
+        733.55
       ]
     },
     "ara": {
@@ -24051,7 +24051,7 @@
         3268.5,
         3271.5,
         3335.25,
-        3334.25
+        3354.5
       ]
     },
     "wheat": {
@@ -36108,16 +36108,16 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:43:51+00:00",
+      "updated_at": "2026-08-11T06:40:58+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:01+00:00",
+      "updated_at": "2026-08-11T06:41:13+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-03",
       "merged_latest": "2026-08-03",
@@ -36126,7 +36126,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:43:52+00:00",
+      "updated_at": "2026-08-11T06:41:03+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36135,7 +36135,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:43:52+00:00",
+      "updated_at": "2026-08-11T06:41:07+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36144,7 +36144,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:43:56+00:00",
+      "updated_at": "2026-08-11T06:41:12+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36153,7 +36153,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:42+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36162,7 +36162,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:42+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36171,7 +36171,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:42+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36180,7 +36180,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:42+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-10",
       "merged_latest": "2026-08-10",
@@ -36189,7 +36189,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:42+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-11",
       "merged_latest": "2026-08-11",
@@ -36198,7 +36198,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:07+00:00",
+      "updated_at": "2026-08-11T06:41:21+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-10",
       "merged_latest": "2026-08-10",
@@ -36207,7 +36207,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:09+00:00",
+      "updated_at": "2026-08-11T06:41:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-10",
       "merged_latest": "2026-08-10",
@@ -36216,7 +36216,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:46:30+00:00",
+      "updated_at": "2026-08-11T06:43:44+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-08-02",
       "merged_latest": "2026-08-02",
@@ -36234,7 +36234,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:19+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -36243,7 +36243,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:19+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-05-31",
       "merged_latest": "2026-05-31",
@@ -36261,7 +36261,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:02+00:00",
+      "updated_at": "2026-08-11T06:41:18+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-10",
       "merged_latest": "2026-08-10",
@@ -36270,7 +36270,7 @@
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:18+00:00",
+      "updated_at": "2026-08-11T06:41:30+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -36278,43 +36278,53 @@
       "changed_points": 0
     },
     "wci_composite": {
-      "state": "stale",
-      "updated_at": "2026-08-11T05:44:18+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "last_success_at": "2026-08-11T04:39:42+00:00",
-      "merged_latest": "2026-08-06"
+      "state": "ok",
+      "updated_at": "2026-08-11T06:41:30+00:00",
+      "message": "Обновлено из официального графика",
+      "fetched_latest": "2026-08-06",
+      "merged_latest": "2026-08-06",
+      "new_points": 0,
+      "changed_points": 0
     },
     "wci_shanghai_rotterdam": {
-      "state": "stale",
-      "updated_at": "2026-08-11T05:44:18+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "last_success_at": "2026-08-11T04:39:42+00:00",
-      "merged_latest": "2026-08-06"
+      "state": "ok",
+      "updated_at": "2026-08-11T06:41:30+00:00",
+      "message": "Обновлено из официального графика",
+      "fetched_latest": "2026-08-06",
+      "merged_latest": "2026-08-06",
+      "new_points": 0,
+      "changed_points": 0
     },
     "wci_shanghai_genoa": {
-      "state": "stale",
-      "updated_at": "2026-08-11T05:44:18+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "last_success_at": "2026-08-11T04:39:42+00:00",
-      "merged_latest": "2026-08-06"
+      "state": "ok",
+      "updated_at": "2026-08-11T06:41:30+00:00",
+      "message": "Обновлено из официального графика",
+      "fetched_latest": "2026-08-06",
+      "merged_latest": "2026-08-06",
+      "new_points": 0,
+      "changed_points": 0
     },
     "wci_shanghai_los_angeles": {
-      "state": "stale",
-      "updated_at": "2026-08-11T05:44:18+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "last_success_at": "2026-08-11T04:39:42+00:00",
-      "merged_latest": "2026-08-06"
+      "state": "ok",
+      "updated_at": "2026-08-11T06:41:30+00:00",
+      "message": "Обновлено из официального графика",
+      "fetched_latest": "2026-08-06",
+      "merged_latest": "2026-08-06",
+      "new_points": 0,
+      "changed_points": 0
     },
     "wci_shanghai_new_york": {
-      "state": "stale",
-      "updated_at": "2026-08-11T05:44:18+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "last_success_at": "2026-08-11T04:39:42+00:00",
-      "merged_latest": "2026-08-06"
+      "state": "ok",
+      "updated_at": "2026-08-11T06:41:30+00:00",
+      "message": "Обновлено из официального графика",
+      "fetched_latest": "2026-08-06",
+      "merged_latest": "2026-08-06",
+      "new_points": 0,
+      "changed_points": 0
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36323,7 +36333,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36332,7 +36342,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36341,7 +36351,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36350,7 +36360,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36359,7 +36369,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36368,7 +36378,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-08-11T05:44:20+00:00",
+      "updated_at": "2026-08-11T06:41:31+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36377,18 +36387,12 @@
     }
   },
   "refresh_summary": {
-    "successes": 24,
-    "failures": 5,
+    "successes": 29,
+    "failures": 0,
     "skipped": 2,
     "total": 31,
-    "actual_changed_points": 5,
-    "updated_at": "2026-08-11T05:46:30+00:00",
-    "failed_sources": {
-      "wci_composite": "429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "wci_shanghai_rotterdam": "429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "wci_shanghai_genoa": "429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "wci_shanghai_los_angeles": "429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry",
-      "wci_shanghai_new_york": "429 Client Error:  for url: https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry"
-    }
+    "actual_changed_points": 4,
+    "updated_at": "2026-08-11T06:43:44+00:00",
+    "failed_sources": {}
   }
 }
