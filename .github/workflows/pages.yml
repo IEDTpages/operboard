@@ -8,9 +8,9 @@ on:
       - "data/current.json"
   workflow_dispatch:
   schedule:
-    # Three checks per hour in UTC. A full refresh runs only when data is
-    # at least 50 minutes old, which compensates for delayed GitHub cron jobs.
-    - cron: "13,33,53 * * * *"
+    # Было:Three checks per hour in UTC. A full refresh runs only when data is
+    # at least 50 minutes old, which compensates for delayed GitHub cron jobs 13,33,53 * * * *. 18.08.26 поменял на 13 * * * *, то есть каждый час на 13 минуте (один раз в час)
+    - cron: "13 * * * *"
 
 permissions:
   contents: write
