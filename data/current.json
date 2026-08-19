@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-08-19T15:12:42+00:00",
+  "generated_at": "2026-08-19T17:47:20+00:00",
   "data_as_of": "2026-08-20",
   "source_mode": "web_refresh",
   "report": {
@@ -14525,7 +14525,7 @@
         88.68,
         91.1,
         91.35,
-        91.88
+        92.12
       ]
     },
     "urals": {
@@ -18020,7 +18020,7 @@
         85.34,
         87.74,
         84.74,
-        85.9
+        86.11
       ]
     },
     "ttf": {
@@ -20977,7 +20977,7 @@
         742.53,
         743.75,
         765.53,
-        752.36
+        759.13
       ]
     },
     "ara": {
@@ -21226,7 +21226,7 @@
         124.15,
         126.4,
         127.2,
-        122.4
+        123.35
       ]
     },
     "lme": {
@@ -24175,7 +24175,7 @@
         3245,
         3258.5,
         3220.25,
-        3221.5
+        3229.75
       ]
     },
     "wheat": {
@@ -36372,7 +36372,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:55:56+00:00",
+      "updated_at": "2026-08-19T17:42:29+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-19",
       "merged_latest": "2026-08-19",
@@ -36380,69 +36380,85 @@
       "changed_points": 0
     },
     "cpi": {
-      "state": "ok",
-      "updated_at": "2026-08-19T14:56:07+00:00",
-      "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-08-10",
-      "merged_latest": "2026-08-10",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "error",
+      "updated_at": "2026-08-19T17:44:52+00:00",
+      "message": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Max retries exceeded with url: /graph-ctl/rosstat_ipc_10299 (Caused by ConnectTimeoutError(<HTTPSConnection(host='m.bizon.ru', port=443) at 0x7efdc354eed0>, 'Connection to m.bizon.ru timed out. (connect timeout=45)'))"
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:55:56+00:00",
+      "updated_at": "2026-08-19T17:42:30+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:01+00:00",
+      "updated_at": "2026-08-19T17:42:30+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:06+00:00",
+      "updated_at": "2026-08-19T17:42:30+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "brent": {
-      "state": "error",
-      "updated_at": "2026-08-19T15:12:42+00:00",
-      "message": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/brent/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-08-19T17:47:20+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-08-19",
+      "merged_latest": "2026-08-19",
+      "new_points": 0,
+      "changed_points": 1
     },
     "urals": {
-      "state": "error",
-      "updated_at": "2026-08-19T15:12:42+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/urals_med/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/urals_med/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-08-19T17:47:20+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-08-19",
+      "merged_latest": "2026-08-19",
+      "new_points": 0,
+      "changed_points": 1
     },
     "ttf": {
-      "state": "error",
-      "updated_at": "2026-08-19T15:12:42+00:00",
-      "message": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/ttfusd1000/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-08-19T17:47:20+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-08-19",
+      "merged_latest": "2026-08-19",
+      "new_points": 0,
+      "changed_points": 1
     },
     "ara": {
-      "state": "error",
-      "updated_at": "2026-08-19T15:12:42+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/coaleu/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/coaleu/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-08-19T17:47:20+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-08-19",
+      "merged_latest": "2026-08-19",
+      "new_points": 0,
+      "changed_points": 1
     },
     "lme": {
-      "state": "error",
-      "updated_at": "2026-08-19T15:12:42+00:00",
-      "message": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/aluminum/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/aluminum/lc91h\", waiting until \"domcontentloaded\"\n"
+      "state": "ok",
+      "updated_at": "2026-08-19T17:47:20+00:00",
+      "message": "Обновлено из таблицы ProFinance через Chromium",
+      "fetched_latest": "2026-08-19",
+      "merged_latest": "2026-08-19",
+      "new_points": 0,
+      "changed_points": 1
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:13+00:00",
+      "updated_at": "2026-08-19T17:44:58+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-18",
       "merged_latest": "2026-08-18",
@@ -36451,7 +36467,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:15+00:00",
+      "updated_at": "2026-08-19T17:45:01+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-18",
       "merged_latest": "2026-08-18",
@@ -36460,7 +36476,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-08-19T15:12:42+00:00",
+      "updated_at": "2026-08-19T17:47:20+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-08-16",
       "merged_latest": "2026-08-16",
@@ -36478,7 +36494,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:23+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -36487,7 +36503,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:23+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -36505,7 +36521,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:09+00:00",
+      "updated_at": "2026-08-19T17:44:53+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-18",
       "merged_latest": "2026-08-18",
@@ -36514,7 +36530,7 @@
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-07-31",
       "merged_latest": "2026-07-31",
@@ -36523,7 +36539,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-13",
       "merged_latest": "2026-08-13",
@@ -36532,7 +36548,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-13",
       "merged_latest": "2026-08-13",
@@ -36541,7 +36557,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-13",
       "merged_latest": "2026-08-13",
@@ -36550,7 +36566,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-13",
       "merged_latest": "2026-08-13",
@@ -36559,7 +36575,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:22+00:00",
+      "updated_at": "2026-08-19T17:45:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-13",
       "merged_latest": "2026-08-13",
@@ -36568,7 +36584,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36577,7 +36593,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36586,7 +36602,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36595,7 +36611,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36604,7 +36620,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36613,7 +36629,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36622,7 +36638,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-08-19T14:56:24+00:00",
+      "updated_at": "2026-08-19T17:45:09+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36631,18 +36647,14 @@
     }
   },
   "refresh_summary": {
-    "successes": 24,
-    "failures": 5,
+    "successes": 28,
+    "failures": 1,
     "skipped": 2,
     "total": 31,
-    "actual_changed_points": 3,
-    "updated_at": "2026-08-19T15:12:42+00:00",
+    "actual_changed_points": 5,
+    "updated_at": "2026-08-19T17:47:20+00:00",
     "failed_sources": {
-      "brent": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/brent/lc91h\", waiting until \"domcontentloaded\"\n",
-      "urals": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/urals_med/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/urals_med/lc91h\", waiting until \"domcontentloaded\"\n",
-      "ttf": "Browser parser: Page.goto: Timeout 90000ms exceeded.\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/ttfusd1000/lc91h\", waiting until \"domcontentloaded\"\n",
-      "ara": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/coaleu/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/coaleu/lc91h\", waiting until \"domcontentloaded\"\n",
-      "lme": "Browser parser: Page.goto: net::ERR_CONNECTION_TIMED_OUT at https://www.profinance.ru/charts/aluminum/lc91h\nCall log:\n  - navigating to \"https://www.profinance.ru/charts/aluminum/lc91h\", waiting until \"domcontentloaded\"\n"
+      "cpi": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Max retries exceeded with url: /graph-ctl/rosstat_ipc_10299 (Caused by ConnectTimeoutError(<HTTPSConnection(host='m.bizon.ru', port=443) at 0x7efdc354eed0>, 'Connection to m.bizon.ru timed out. (connect timeout=45)'))"
     }
   }
 }
