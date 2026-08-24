@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-08-24T05:05:30+00:00",
+  "generated_at": "2026-08-24T07:32:58+00:00",
   "data_as_of": "2026-08-24",
   "source_mode": "web_refresh",
   "report": {
@@ -14553,7 +14553,7 @@
         93.22,
         93.68,
         93.34,
-        93.06
+        92.9
       ]
     },
     "urals": {
@@ -18056,7 +18056,7 @@
         90.17,
         86.14,
         85.8,
-        85.53
+        85.32
       ]
     },
     "ttf": {
@@ -21021,7 +21021,7 @@
         773.17,
         799.26,
         794.07,
-        793.26
+        790.48
       ]
     },
     "ara": {
@@ -24229,7 +24229,7 @@
         3235.5,
         3186.25,
         3242.5,
-        3246.75
+        3253
       ]
     },
     "wheat": {
@@ -36452,16 +36452,16 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:02:54+00:00",
+      "updated_at": "2026-08-24T07:30:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-24",
       "merged_latest": "2026-08-24",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:02:56+00:00",
+      "updated_at": "2026-08-24T07:30:29+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-17",
       "merged_latest": "2026-08-17",
@@ -36470,7 +36470,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:02:54+00:00",
+      "updated_at": "2026-08-24T07:30:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-22",
       "merged_latest": "2026-08-22",
@@ -36479,7 +36479,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:02:54+00:00",
+      "updated_at": "2026-08-24T07:30:23+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-22",
       "merged_latest": "2026-08-22",
@@ -36488,7 +36488,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:02:55+00:00",
+      "updated_at": "2026-08-24T07:30:28+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-22",
       "merged_latest": "2026-08-22",
@@ -36497,7 +36497,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:29+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-24",
       "merged_latest": "2026-08-24",
@@ -36506,7 +36506,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:29+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-24",
       "merged_latest": "2026-08-24",
@@ -36515,7 +36515,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:29+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-24",
       "merged_latest": "2026-08-24",
@@ -36524,7 +36524,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:29+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-21",
       "merged_latest": "2026-08-21",
@@ -36533,7 +36533,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:29+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-08-24",
       "merged_latest": "2026-08-24",
@@ -36542,7 +36542,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:08+00:00",
+      "updated_at": "2026-08-24T07:30:39+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-21",
       "merged_latest": "2026-08-21",
@@ -36551,7 +36551,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:11+00:00",
+      "updated_at": "2026-08-24T07:30:41+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-21",
       "merged_latest": "2026-08-21",
@@ -36560,7 +36560,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:05:30+00:00",
+      "updated_at": "2026-08-24T07:32:58+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-08-16",
       "merged_latest": "2026-08-16",
@@ -36578,7 +36578,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -36587,7 +36587,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -36605,12 +36605,12 @@
     },
     "ati_ftl": {
       "state": "error",
-      "updated_at": "2026-08-24T05:03:04+00:00",
+      "updated_at": "2026-08-24T07:30:36+00:00",
       "message": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic"
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-07-31",
       "merged_latest": "2026-07-31",
@@ -36619,7 +36619,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
@@ -36628,7 +36628,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
@@ -36637,7 +36637,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
@@ -36646,7 +36646,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
@@ -36655,7 +36655,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:17+00:00",
+      "updated_at": "2026-08-24T07:30:47+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-08-20",
       "merged_latest": "2026-08-20",
@@ -36664,7 +36664,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36673,7 +36673,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36682,7 +36682,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36691,7 +36691,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36700,7 +36700,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36709,7 +36709,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36718,7 +36718,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-08-24T05:03:18+00:00",
+      "updated_at": "2026-08-24T07:30:48+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -36731,8 +36731,8 @@
     "failures": 1,
     "skipped": 2,
     "total": 31,
-    "actual_changed_points": 5,
-    "updated_at": "2026-08-24T05:05:30+00:00",
+    "actual_changed_points": 4,
+    "updated_at": "2026-08-24T07:32:58+00:00",
     "failed_sources": {
       "ati_ftl": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic"
     }
