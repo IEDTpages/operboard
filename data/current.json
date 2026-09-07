@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-09-07T16:33:41+00:00",
+  "generated_at": "2026-09-07T20:40:04+00:00",
   "data_as_of": "2026-09-08",
   "source_mode": "web_refresh",
   "report": {
@@ -14667,7 +14667,7 @@
         95.89,
         96.07,
         96.76,
-        97.22
+        97.31
       ]
     },
     "urals": {
@@ -18194,7 +18194,7 @@
         86.36,
         87.11,
         87.8,
-        86.69
+        86.78
       ]
     },
     "ttf": {
@@ -21183,7 +21183,7 @@
         857.48,
         871.07,
         895.29,
-        882.59
+        879.25
       ]
     },
     "ara": {
@@ -24431,7 +24431,7 @@
         3293.25,
         3318.75,
         3295.5,
-        3313.5
+        3311.75
       ]
     },
     "wheat": {
@@ -37532,7 +37532,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:28:59+00:00",
+      "updated_at": "2026-09-07T20:35:27+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
@@ -37541,7 +37541,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:29:01+00:00",
+      "updated_at": "2026-09-07T20:35:29+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -37550,34 +37550,34 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:28:59+00:00",
+      "updated_at": "2026-09-07T20:35:27+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-08",
       "merged_latest": "2026-09-08",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:28:59+00:00",
+      "updated_at": "2026-09-07T20:35:27+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-08",
       "merged_latest": "2026-09-08",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:28:59+00:00",
+      "updated_at": "2026-09-07T20:35:28+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-08",
       "merged_latest": "2026-09-08",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
@@ -37586,7 +37586,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
@@ -37595,7 +37595,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
@@ -37604,16 +37604,16 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
       "new_points": 0,
-      "changed_points": 1
+      "changed_points": 0
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-09-07",
       "merged_latest": "2026-09-07",
@@ -37622,7 +37622,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:29:07+00:00",
+      "updated_at": "2026-09-07T20:35:33+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-04",
       "merged_latest": "2026-09-04",
@@ -37631,7 +37631,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:29:10+00:00",
+      "updated_at": "2026-09-07T20:35:36+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-04",
       "merged_latest": "2026-09-04",
@@ -37640,7 +37640,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:33:41+00:00",
+      "updated_at": "2026-09-07T20:40:04+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-08-30",
       "merged_latest": "2026-08-30",
@@ -37658,7 +37658,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:53+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -37667,7 +37667,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:53+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-06-30",
       "merged_latest": "2026-06-30",
@@ -37685,7 +37685,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:29:02+00:00",
+      "updated_at": "2026-09-07T20:35:30+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-09-06",
       "merged_latest": "2026-09-06",
@@ -37694,14 +37694,14 @@
     },
     "erai_composite": {
       "state": "stale",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. официальный JSON: 500 Server Error: Internal Server Error for url: https://index1520.com/ajax/index-quotes.php?page=main&lang=ru; резервный график: Page.wait_for_selector: Timeout 120000ms exceeded.\nCall log:\n  - waiting for locator(\"canvas\") to be visible\n",
-      "last_success_at": "2026-09-07T10:21:08+00:00",
+      "last_success_at": "2026-09-07T16:31:28+00:00",
       "merged_latest": "2026-07-31"
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-09-03",
       "merged_latest": "2026-09-03",
@@ -37710,7 +37710,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-09-03",
       "merged_latest": "2026-09-03",
@@ -37719,7 +37719,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-09-03",
       "merged_latest": "2026-09-03",
@@ -37728,7 +37728,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-09-03",
       "merged_latest": "2026-09-03",
@@ -37737,7 +37737,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:28+00:00",
+      "updated_at": "2026-09-07T20:37:52+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-09-03",
       "merged_latest": "2026-09-03",
@@ -37746,7 +37746,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37755,7 +37755,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37764,7 +37764,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37773,7 +37773,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37782,7 +37782,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37791,7 +37791,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37800,7 +37800,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-09-07T16:31:30+00:00",
+      "updated_at": "2026-09-07T20:37:54+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -37813,8 +37813,8 @@
     "failures": 1,
     "skipped": 2,
     "total": 31,
-    "actual_changed_points": 8,
-    "updated_at": "2026-09-07T16:33:41+00:00",
+    "actual_changed_points": 4,
+    "updated_at": "2026-09-07T20:40:04+00:00",
     "failed_sources": {
       "erai_composite": "официальный JSON: 500 Server Error: Internal Server Error for url: https://index1520.com/ajax/index-quotes.php?page=main&lang=ru; резервный график: Page.wait_for_selector: Timeout 120000ms exceeded.\nCall log:\n  - waiting for locator(\"canvas\") to be visible\n"
     }
