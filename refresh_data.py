@@ -405,6 +405,23 @@ def merge_numeric_series(
     }
 
 
+def merge_wci_series(
+    existing: dict[str, Any], dates: list[str], values: list[float | int]
+) -> dict[str, Any]:
+    """Replace the observed window so obsolete Canva dates cannot survive."""
+    validate_numeric_series(dates, values, "Drewry WCI")
+    observed = set(dates)
+    kept = [
+        (day, value)
+        for day, value in zip(existing.get("dates", []), existing.get("values", []), strict=False)
+        if day < dates[0] or day > dates[-1] or day in observed
+    ]
+    clean = dict(existing)
+    clean["dates"] = [day for day, _ in kept]
+    clean["values"] = [value for _, value in kept]
+    return merge_numeric_series(clean, dates, values)
+
+
 def fetch_key_rate() -> tuple[list[str], list[float | int]]:
     start = START_DATE.strftime("%d.%m.%Y")
     end = (date.today() + timedelta(days=31)).strftime("%d.%m.%Y")
@@ -3239,6 +3256,38 @@ def _svg_number(value: Any) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def _wci_axis_value(label: str) -> int | None:
+    """Canva uses both $5 (thousands) and $5.000 (full dollars)."""
+    match = re.fullmatch(r"\$\s*([\d.,]+)", label.strip())
+    if not match:
+        return None
+    raw = match.group(1)
+    if raw == "0":
+        return 0
+    if re.fullmatch(r"\d{1,3}(?:[.,]\d{3})+", raw):
+        return int(re.sub(r"[.,]", "", raw))
+    if raw.isdigit() and int(raw) <= 20:
+        return int(raw) * 1000
+    return None
+
+
+def _wci_weekly_dates(
+    start_date: date, end_date: date, point_count: int, tick_dates: list[date]
+) -> list[date]:
+    """Rebuild Thursdays without inventing dates by linear interpolation."""
+    span = (end_date - start_date).days
+    if span < 0 or span % 7:
+        raise RuntimeError("Drewry WCI: некорректные недельные границы графика")
+    points = [
+        start_date + timedelta(days=7 * week)
+        for week in range(span // 7 + 1)
+        if (start_date + timedelta(days=7 * week)).strftime("%m-%d") != "01-01"
+    ]
+    if len(points) != point_count or any(tick not in points for tick in tick_dates):
+        raise RuntimeError("Drewry WCI: недельные даты не совпадают с точками графика")
+    return points
+
+
 def parse_canva_wci_svg(svg_html: str) -> dict[str, tuple[list[str], list[float | int]]]:
     """Recover exact weekly WCI points from Canva's accessible SVG geometry."""
     soup = BeautifulSoup(svg_html, "lxml")
@@ -3253,11 +3302,11 @@ def parse_canva_wci_svg(svg_html: str) -> dict[str, tuple[list[str], list[float 
         }
     )
     axis_values = [
-        int(match.group(1)) * 1000
+        value
         for text in svg.find_all("text")
-        if (match := re.fullmatch(r"\$(\d+)", text.get_text(strip=True)))
+        if (value := _wci_axis_value(text.get_text(strip=True))) is not None
     ]
-    if len(grid_y) < 2 or not axis_values:
+    if len(grid_y) < 2 or not any(value > 0 for value in axis_values):
         raise RuntimeError("Drewry WCI: в SVG не распознана вертикальная шкала")
     top_y, bottom_y, max_value = min(grid_y), max(grid_y), max(axis_values)
 
@@ -3270,11 +3319,9 @@ def parse_canva_wci_svg(svg_html: str) -> dict[str, tuple[list[str], list[float 
         raise RuntimeError("Drewry WCI: в SVG не распознан диапазон дат")
     start_date, end_date = boundary_dates[0], boundary_dates[-1]
 
-    # Canva renders every second observation as an x-axis label.  Using a
-    # simple interpolation between the range handles would shift dates after
-    # a holiday week (Drewry did not publish on 1 January 2026).  Rebuild the
-    # observation calendar from the visible tick labels instead: the hidden
-    # point between two ticks is the Thursday immediately before the latter.
+    # Canva renders every second observation as an x-axis label. The final
+    # tick may precede the range handle by one week. The current year omits
+    # 1 January; never interpolate all dates across that gap.
     rendered_dates = [
         parsed
         for text in svg.find_all("text")
@@ -3336,24 +3383,19 @@ def parse_canva_wci_svg(svg_html: str) -> dict[str, tuple[list[str], list[float 
         point_count = len(y_values)
         if point_count < 2:
             continue
-        point_dates: list[date] = []
-        if len(tick_dates) >= 2 and tick_dates[0] == start_date and tick_dates[-1] == end_date:
-            point_dates = [tick_dates[0]]
-            for tick in tick_dates[1:]:
-                point_dates.extend([tick - timedelta(days=7), tick])
-        if len(point_dates) != point_count:
-            span_days = (end_date - start_date).days
-            step_days = span_days / (point_count - 1)
-            point_dates = [
-                start_date + timedelta(days=round(step_days * index))
-                for index in range(point_count)
-            ]
+        point_dates = _wci_weekly_dates(start_date, end_date, point_count, tick_dates)
         rows: list[tuple[date, float]] = []
         for point_date, y_value in zip(point_dates, y_values):
             value = max_value * (bottom_y - y_value) / (bottom_y - top_y)
             rows.append((point_date, round(value)))
         dates, values = pack_series(rows)
         validate_numeric_series(dates, values, f"Drewry WCI — {key}")
+        # A broken axis previously yielded a plausible-looking row of zeroes,
+        # which merge_numeric_series then published as a successful refresh.
+        if len(dates) < 3 or any(value < 100 for value in values):
+            raise RuntimeError(f"Drewry WCI — {key}: недостоверные значения графика")
+        if dates[0] != start_date.isoformat() or dates[-1] != end_date.isoformat():
+            raise RuntimeError(f"Drewry WCI — {key}: число точек не совпадает с датами графика")
         output[key] = (dates, values)
     return output
 
@@ -3390,6 +3432,9 @@ def fetch_drewry_wci(browser: Browser) -> dict[str, tuple[list[str], list[float 
     missing = required.difference(output)
     if missing:
         raise RuntimeError(f"Drewry WCI: не распознаны ряды {', '.join(sorted(missing))}")
+    latest_dates = {output[key][0][-1] for key in required}
+    if len(latest_dates) != 1:
+        raise RuntimeError("Drewry WCI: даты пяти графиков не совпадают")
     return output
 
 
@@ -4303,7 +4348,11 @@ def refresh_payload(base_payload: dict[str, Any]) -> tuple[dict[str, Any], dict[
         if key in logistics_results:
             try:
                 dates, values = logistics_results[key]
-                result = merge_numeric_series(updated["series"][key], dates, values)
+                result = (
+                    merge_numeric_series(updated["series"][key], dates, values)
+                    if key == "erai_composite"
+                    else merge_wci_series(updated["series"][key], dates, values)
+                )
                 updated["series"][key]["dates"] = result["dates"]
                 updated["series"][key]["values"] = result["values"]
                 source_message = (

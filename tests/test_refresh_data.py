@@ -289,6 +289,81 @@ class RefreshDataTests(unittest.TestCase):
         result = refresh_data.parse_canva_wci_svg(svg)["wci_composite"]
         self.assertEqual(result[0], ["2025-12-25", "2026-01-08", "2026-01-15"])
 
+    def test_canva_wci_svg_reads_current_thousands_separators(self) -> None:
+        svg = """
+        <svg>
+          <g><circle fill="#243a50"/><text>World Container Index (WCI) Composite Index</text></g>
+          <circle aria-valuetext="10-Sep-26"/><circle aria-valuetext="24-Sep-26"/>
+          <line y1="500" y2="500" stroke="rgba(0,0,0,0.6)"/>
+          <line y1="0" y2="0" stroke="rgba(0,0,0,0.25)"/>
+          <text>$0</text><text>$1.000</text><text>$5.000</text>
+          <path stroke="#243a50" fill="none" d="M 10 100 C 10 100 20 75 30 50"/>
+          <path stroke="#243a50" fill="none" d="M 30 50 C 30 50 40 55 50 53.2"/>
+        </svg>
+        """
+        dates, values = refresh_data.parse_canva_wci_svg(svg)["wci_composite"]
+        self.assertEqual(dates, ["2026-09-10", "2026-09-17", "2026-09-24"])
+        self.assertEqual(values, [4000, 4500, 4468])
+
+    def test_canva_wci_last_axis_tick_precedes_last_point(self) -> None:
+        from datetime import date
+
+        points = refresh_data._wci_weekly_dates(
+            date(2025, 9, 25), date(2026, 9, 24), 52,
+            [date(2025, 9, 25), date(2026, 9, 17)],
+        )
+        self.assertEqual(points[-2:], [date(2026, 9, 17), date(2026, 9, 24)])
+        self.assertNotIn(date(2026, 1, 1), points)
+        with self.assertRaisesRegex(RuntimeError, "недельные даты"):
+            refresh_data._wci_weekly_dates(
+                date(2025, 9, 25), date(2026, 9, 24), 53, [],
+            )
+
+    def test_canva_wci_svg_rejects_zero_axis_and_zero_points(self) -> None:
+        svg = """
+        <svg>
+          <g><circle fill="#243a50"/><text>World Container Index (WCI) Composite Index</text></g>
+          <circle aria-valuetext="10-Sep-26"/><circle aria-valuetext="24-Sep-26"/>
+          <line y1="500" y2="500" stroke="rgba(0,0,0,0.6)"/>
+          <line y1="0" y2="0" stroke="rgba(0,0,0,0.25)"/>
+          <text>$0</text><text>$5.000</text>
+          <path stroke="#243a50" fill="none" d="M 10 100 C 10 100 20 75 30 50"/>
+          <path stroke="#243a50" fill="none" d="M 30 50 C 30 50 40 55 50 500"/>
+        </svg>
+        """
+        with self.assertRaisesRegex(RuntimeError, "недостоверные значения"):
+            refresh_data.parse_canva_wci_svg(svg)
+        with self.assertRaisesRegex(RuntimeError, "вертикальная шкала"):
+            refresh_data.parse_canva_wci_svg(svg.replace("<text>$5.000</text>", ""))
+
+    def test_packaged_wci_has_no_zeroes_and_matches_drewry_release(self) -> None:
+        import json
+
+        expected = {
+            "wci_composite": 4468,
+            "wci_shanghai_rotterdam": 3485,
+            "wci_shanghai_genoa": 3835,
+            "wci_shanghai_los_angeles": 7838,
+            "wci_shanghai_new_york": 10373,
+        }
+        for filename in ("current.json", "snapshot.json"):
+            payload = json.loads((refresh_data.DATA_DIR / filename).read_text(encoding="utf-8"))
+            for key, value in expected.items():
+                series = payload["series"][key]
+                self.assertEqual(series["dates"][-1], "2026-09-24")
+                self.assertEqual(series["values"][-1], value)
+                self.assertGreater(min(series["values"]), 100)
+                self.assertNotIn("2026-01-01", series["dates"])
+
+    def test_wci_refresh_removes_obsolete_dates_in_observed_window(self) -> None:
+        result = refresh_data.merge_wci_series(
+            {"dates": ["2025-09-18", "2025-09-25", "2025-10-02", "2025-10-09"],
+             "values": [1750, 0, 0, 0]},
+            ["2025-09-25", "2025-10-09"], [1761, 1651],
+        )
+        self.assertEqual(result["dates"], ["2025-09-18", "2025-09-25", "2025-10-09"])
+        self.assertEqual(result["values"], [1750, 1761, 1651])
+
     def test_cbr_macro_survey_ignores_previous_month_in_parentheses(self) -> None:
         html = """
         <table>
