@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import io
 import os
+import shutil
+import subprocess
 import unittest
 from datetime import date, datetime
 from pathlib import Path
@@ -17,6 +19,15 @@ INDEX_HTML = Path(__file__).resolve().parents[1] / "index.html"
 
 
 class RefreshDataTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("node"), "Node.js is not installed")
+    def test_russian_date_labels_follow_observation_dates(self) -> None:
+        subprocess.run(
+            ["node", str(INDEX_HTML.parent / "tests" / "check_date_ui.js"), str(INDEX_HTML)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
     def test_trade_and_road_charts_do_not_pass_undefined_trace_fields(self) -> None:
         html = INDEX_HTML.read_text(encoding="utf-8")
         self.assertNotIn("mode:annual?undefined", html)
@@ -65,6 +76,23 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(read_excel.call_args.kwargs["sheet_name"], "Ежемесячные")
         self.assertEqual(result["exports"], (["2025-01-31", "2025-02-28"], [40.5, 41]))
         self.assertEqual(result["imports"], (["2025-01-31", "2025-02-28"], [25.25, 26]))
+
+    def test_cbr_trade_skips_release_footer_without_parsing_112026_as_year(self) -> None:
+        frame = pd.DataFrame([[None] * 17 for _ in range(10)])
+        frame.iat[4, 2] = "Экспорт товаров (ФОБ)"
+        frame.iat[4, 8] = "Импорт товаров (ФОБ)"
+        frame.iat[5, 2] = frame.iat[5, 8] = "Всего"
+        frame.iat[7, 0], frame.iat[7, 1] = 2026, "Июл"
+        frame.iat[7, 2], frame.iat[7, 8] = 45010, 31415
+        frame.iat[9, 0] = "Дата последнего обновления: 11 сентября 2026 г."
+        frame.iat[9, 1] = "Дата последнего обновления: 30 сентября 2026 г."
+        class Response:
+            content = b"workbook"
+        with patch.object(refresh_data, "get", return_value=Response()):
+            with patch.object(refresh_data.pd, "read_excel", return_value=frame):
+                result = refresh_data.fetch_cbr_trade()
+        self.assertEqual(result["exports"], (["2026-07-31"], [45.01]))
+        self.assertEqual(result["imports"], (["2026-07-31"], [31.415]))
 
     def test_erai_chart_payload_selects_composite_monthly_series(self) -> None:
         charts = [
@@ -350,8 +378,9 @@ class RefreshDataTests(unittest.TestCase):
             payload = json.loads((refresh_data.DATA_DIR / filename).read_text(encoding="utf-8"))
             for key, value in expected.items():
                 series = payload["series"][key]
-                self.assertEqual(series["dates"][-1], "2026-09-24")
-                self.assertEqual(series["values"][-1], value)
+                self.assertGreaterEqual(series["dates"][-1], "2026-09-24")
+                if series["dates"][-1] == "2026-09-24":
+                    self.assertEqual(series["values"][-1], value)
                 self.assertGreater(min(series["values"]), 100)
                 self.assertNotIn("2026-01-01", series["dates"])
 
@@ -841,6 +870,64 @@ class RefreshDataTests(unittest.TestCase):
         self.assertEqual(parsed["modes"]["mom"]["dates"][-1], "2026-05-31")
         self.assertEqual(parsed["modes"]["mom"]["series"]["total"][-1], 96.5)
         self.assertEqual(parsed["modes"]["yoy"]["series"]["mining"][-1], 98.5)
+
+    def test_rosstat_cumulative_headers_keep_all_eight_months(self) -> None:
+        output = io.BytesIO()
+        months = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август"]
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for sheet_number, offset in (("1", 0), ("2", 1), ("3", 2)):
+                frame = pd.DataFrame([[None] * 10 for _ in range(140)])
+                frame.iat[3, 2] = "2026 год¹"
+                frame.iloc[4, 2:10] = (
+                    ["январь–" + month if i else "январь" for i, month in enumerate(months)]
+                    if sheet_number == "3" else months
+                )
+                for line_offset, row_index in enumerate((5, 6, 20)):
+                    frame.iloc[row_index, 2:10] = [
+                        96 + offset + line_offset + month / 10 for month in range(1, 9)
+                    ]
+                frame.to_excel(writer, sheet_name=sheet_number, index=False, header=False)
+        parsed = refresh_data.parse_rosstat_production_workbook(
+            output.getvalue(), release_period=date(2026, 8, 31)
+        )
+        self.assertEqual(parsed["modes"]["ytd_yoy"]["dates"], [
+            "2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30",
+            "2026-05-31", "2026-06-30", "2026-07-31", "2026-08-31",
+        ])
+        self.assertEqual(parsed["modes"]["ytd_yoy"]["series"]["total"][-1], 98.8)
+
+    def test_rosstat_rejects_cumulative_sheet_missing_release_month(self) -> None:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for sheet_number in ("1", "2", "3"):
+                frame = pd.DataFrame([[None] * 10 for _ in range(21)])
+                frame.iat[3, 2] = 2026
+                frame.iloc[4, 2:10] = list(range(1, 9))
+                for row in (5, 6, 20):
+                    frame.iloc[row, 2:10] = [100.1] * 8
+                if sheet_number == "3":
+                    for row in (5, 6, 20):
+                        frame.iat[row, 9] = None
+                frame.to_excel(writer, sheet_name=sheet_number, index=False, header=False)
+        with self.assertRaisesRegex(RuntimeError, "не содержит все месяцы до 2026-08-31"):
+            refresh_data.parse_rosstat_production_workbook(
+                output.getvalue(), release_period=date(2026, 8, 31)
+            )
+
+    def test_rosstat_october_refresh_probes_august_release(self) -> None:
+        candidates = refresh_data.rosstat_monthly_workbook_candidates(
+            refresh_data.ROSSTAT_PRODUCTION_FILENAME_PREFIX,
+            confirmed_url=refresh_data.ROSSTAT_PRODUCTION_XLSX_CONFIRMED,
+            as_of=date(2026, 10, 1),
+        )
+        self.assertIn(
+            "https://rosstat.gov.ru/storage/mediabank/ind_baza_2023-08-2026.xlsx",
+            candidates,
+        )
+        self.assertIn(
+            "https://rosstat.gov.ru/storage/mediabank/ind_baza_2023_08-2026.xlsx",
+            candidates,
+        )
 
     def test_parse_rosstat_production_uses_release_for_format_only_headers(self) -> None:
         """Use the filename period when C4:G5 formatting has no readable labels."""

@@ -551,12 +551,17 @@ def fetch_cbr_trade() -> dict[str, tuple[list[str], list[float | int]]]:
         if year_number is None or not float(year_number).is_integer():
             continue
         year = int(year_number)
-        if year < START_DATE.year:
+        # The final footnote now includes "11 сентября 2026" in column A.
+        # to_number() turns that into 112026, which date() cannot accept.
+        if not START_DATE.year <= year <= date.today().year:
             continue
-        parsed = parse_date(f"1 {month_text} {year}")
-        if parsed is None:
+        # A release timestamp in column B must not become a data month.
+        if not re.fullmatch(r"[а-яё]{3,12}\.?", month_text):
             continue
-        period_end = date(year, parsed.month, calendar.monthrange(year, parsed.month)[1])
+        month = _month_number(month_text)
+        if month is None:
+            continue
+        period_end = date(year, month, calendar.monthrange(year, month)[1])
         for key, column_index in (("exports", export_column), ("imports", import_column)):
             value = to_number(frame.iat[row_index, column_index])
             if value is not None:
@@ -1860,7 +1865,7 @@ def _workbook_sheet_name(workbook: pd.ExcelFile, expected: str) -> str | None:
     )
 
 
-def _rosstat_month_from_header(value: Any) -> int | None:
+def _rosstat_month_from_header(value: Any, *, cumulative: bool = False) -> int | None:
     """Read a Russian month label after removing Rosstat footnote markers."""
     if value is None or (isinstance(value, float) and math.isnan(value)):
         return None
@@ -1878,11 +1883,9 @@ def _rosstat_month_from_header(value: Any) -> int | None:
     text = _normalise_header(value)
     text = re.sub(r"[\u00b9\u00b2\u00b3\u2070-\u2079*]+", "", text)
     text = re.sub(r"\d+\s*\)?\s*$", "", text)
-    for token in re.findall(r"[а-яё]+", text):
-        month = _month_number(token)
-        if month:
-            return month
-    return None
+    months = [month for token in re.findall(r"[а-яё]+", text)
+              if (month := _month_number(token)) is not None]
+    return (months[-1] if cumulative else months[0]) if months else None
 
 
 def _parse_rosstat_production_fixed_layout(
@@ -1921,7 +1924,10 @@ def _parse_rosstat_production_fixed_layout(
             explicit_year = _year_from_cell(frame.iat[3, column_index])
             if explicit_year is not None:
                 carried_year = explicit_year
-            month = _rosstat_month_from_header(frame.iat[4, column_index])
+            month_header = frame.iat[4, column_index]
+            month = _rosstat_month_from_header(
+                month_header, cumulative=(mode == "ytd_yoy")
+            )
             # A date may be stored in the month row even when the separate year
             # row contains only a formatted/merged heading.
             month_cell_period = _month_period_from_cell(
@@ -1931,7 +1937,10 @@ def _parse_rosstat_production_fixed_layout(
             effective_year = carried_year
             if month_cell_period is not None:
                 effective_year = effective_year or month_cell_period.year
-                month = month or month_cell_period.month
+                if mode == "ytd_yoy" and _is_cumulative_month_text(month_header):
+                    month = month_cell_period.month
+                else:
+                    month = month or month_cell_period.month
 
             # Last-resort handling for compact current-year releases.  In the
             # May book the five data columns C:G can be plain 1..5 or have
@@ -1994,6 +2003,13 @@ def _parse_rosstat_production_fixed_layout(
         "modes": modes,
     }
     _validate_production_modes(result, "Росстат — ИПП", minimum_months=1)
+    if release_period is not None:
+        for mode, block in modes.items():
+            if block["dates"][-1] != release_period.isoformat():
+                raise RuntimeError(
+                    f"Росстат: лист {mode} не содержит все месяцы до "
+                    f"{release_period.isoformat()} (последний: {block['dates'][-1]})"
+                )
     return result
 
 
