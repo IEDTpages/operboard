@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-10-10T02:22:24+00:00",
+  "generated_at": "2026-10-10T08:51:14+00:00",
   "data_as_of": "2026-10-10",
   "source_mode": "web_refresh",
   "report": {
@@ -38108,7 +38108,7 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:19:56+00:00",
+      "updated_at": "2026-10-10T08:48:16+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38117,7 +38117,7 @@
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:00+00:00",
+      "updated_at": "2026-10-10T08:48:18+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-05",
       "merged_latest": "2026-10-05",
@@ -38126,7 +38126,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:19:57+00:00",
+      "updated_at": "2026-10-10T08:48:17+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-10",
       "merged_latest": "2026-10-10",
@@ -38135,7 +38135,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:19:57+00:00",
+      "updated_at": "2026-10-10T08:48:17+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-10",
       "merged_latest": "2026-10-10",
@@ -38144,7 +38144,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:19:57+00:00",
+      "updated_at": "2026-10-10T08:48:17+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-10",
       "merged_latest": "2026-10-10",
@@ -38153,7 +38153,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38162,7 +38162,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38171,7 +38171,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38180,7 +38180,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38189,7 +38189,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38198,7 +38198,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:05+00:00",
+      "updated_at": "2026-10-10T08:48:22+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38207,7 +38207,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:07+00:00",
+      "updated_at": "2026-10-10T08:48:24+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
@@ -38216,7 +38216,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:22:24+00:00",
+      "updated_at": "2026-10-10T08:51:14+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-10-04",
       "merged_latest": "2026-10-04",
@@ -38224,15 +38224,17 @@
       "changed_points": 0
     },
     "production_index": {
-      "state": "stale",
-      "updated_at": "2026-10-09T06:31:15+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. Росстат: ни одна книга ИПП не скачана: страница: Росстат: страница источника недоступна; https://rosstat.gov.ru/enterprise_industrial: 426 Client Error:  for url: https://rosstat.gov.ru/enterprise_industrial; https://rosstat.gov.ru/enterprise_industrial?print=1: 426 Client Error:  for url: https://rosstat.gov.ru/enterprise_industrial?print=1; ind_baza_2023-04-2026.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/ind_baza_2023-04-2026.xlsx; ind_baza_2023_04-2026.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/ind_baza_2023_04-2026.xlsx; ind_baza_2023-03-2026.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/ind_baza_2023-03-2026.xlsx; ind_baza_2023_03-2026.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/ind_baza_2023_03-2026.xlsx; ind_baza_2023-02-2026.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru",
-      "last_success_at": "2026-10-08T14:48:24+00:00",
-      "merged_latest": "2026-08-31"
+      "state": "ok",
+      "updated_at": "2026-10-10T08:49:03+00:00",
+      "message": "Обновлено из официальной таблицы Росстата",
+      "fetched_latest": "2026-08-31",
+      "merged_latest": "2026-08-31",
+      "new_points": 0,
+      "changed_points": 0
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:49:03+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-07-31",
       "merged_latest": "2026-07-31",
@@ -38241,7 +38243,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:49:03+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-07-31",
       "merged_latest": "2026-07-31",
@@ -38249,24 +38251,26 @@
       "changed_points": 0
     },
     "road_freight": {
-      "state": "stale",
-      "updated_at": "2026-10-09T06:31:08+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. Росстат: месячные данные автоперевозок не получены: страница: Росстат: страница источника недоступна; https://rosstat.gov.ru/statistics/transport: 426 Client Error:  for url: https://rosstat.gov.ru/statistics/transport; https://rosstat.gov.ru/statistics/transport?print=1: 426 Client Error:  for url: https://rosstat.gov.ru/statistics/transport?print=1; PerevGruz_11-2025.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_11-2025.xlsx; PerevGruz_10-2025.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_10-2025.xlsx; PerevGruz_09-2025.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_09-2025.xlsx; PerevGruz_08-2025.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_08-2025.xlsx; PerevGruz_07-2025.xlsx: 426 Client Error:  for url: https://rosstat.gov.ru/storage/mediabank/PerevGru",
-      "last_success_at": "2026-10-08T14:48:15+00:00",
-      "merged_latest": "2026-08-31"
+      "state": "ok",
+      "updated_at": "2026-10-10T08:48:55+00:00",
+      "message": "Обновлено из официальной таблицы Росстата",
+      "fetched_latest": "2026-08-31",
+      "merged_latest": "2026-08-31",
+      "new_points": 0,
+      "changed_points": 0
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:01+00:00",
+      "updated_at": "2026-10-10T08:48:19+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-09",
       "merged_latest": "2026-10-09",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38275,7 +38279,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38284,7 +38288,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38293,7 +38297,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38302,7 +38306,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38311,7 +38315,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:13+00:00",
+      "updated_at": "2026-10-10T08:48:30+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38320,7 +38324,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38329,7 +38333,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38338,7 +38342,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38347,7 +38351,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38356,7 +38360,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38365,7 +38369,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38374,7 +38378,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-10-10T02:20:14+00:00",
+      "updated_at": "2026-10-10T08:49:04+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38383,12 +38387,12 @@
     }
   },
   "refresh_summary": {
-    "successes": 29,
+    "successes": 31,
     "failures": 0,
-    "skipped": 2,
+    "skipped": 0,
     "total": 31,
-    "actual_changed_points": 1,
-    "updated_at": "2026-10-10T02:22:24+00:00",
+    "actual_changed_points": 0,
+    "updated_at": "2026-10-10T08:51:14+00:00",
     "failed_sources": {}
   }
 }
