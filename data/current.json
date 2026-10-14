@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-10-14T06:49:11+00:00",
+  "generated_at": "2026-10-14T12:31:59+00:00",
   "data_as_of": "2026-10-14",
   "source_mode": "web_refresh",
   "report": {
@@ -14951,7 +14951,7 @@
         103.54,
         106.14,
         106.25,
-        105.91
+        105.64
       ]
     },
     "urals": {
@@ -18542,7 +18542,7 @@
         129.84,
         120.67,
         121.44,
-        117.84
+        117.79
       ]
     },
     "ttf": {
@@ -21595,7 +21595,7 @@
         939.53,
         972.45,
         1004.7,
-        992.17
+        986.12
       ]
     },
     "ara": {
@@ -21765,7 +21765,8 @@
         "2026-10-08",
         "2026-10-09",
         "2026-10-12",
-        "2026-10-13"
+        "2026-10-13",
+        "2026-10-14"
       ],
       "values": [
         129.5,
@@ -21922,7 +21923,8 @@
         145.8,
         146.5,
         148,
-        149.6
+        149.6,
+        146.5
       ]
     },
     "lme": {
@@ -24949,7 +24951,7 @@
         3056.25,
         3048,
         3034.25,
-        3033
+        3017.25
       ]
     },
     "wheat": {
@@ -37880,9 +37882,9 @@
         7.4,
         9.5,
         5.6,
-        6.6,
-        4.6,
-        4,
+        7.1,
+        5,
+        4.2,
         4
       ],
       "kinds": [
@@ -37898,7 +37900,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_key_rate": {
       "title": "Ключевая ставка: факт и прогноз",
@@ -37926,10 +37928,10 @@
         9.9,
         17.5,
         19.2,
-        14.5,
-        12.4,
-        10,
-        8.6
+        14.6,
+        12.8,
+        10.8,
+        9.2
       ],
       "kinds": [
         "fact",
@@ -37944,7 +37946,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_gdp": {
       "title": "ВВП: факт и прогноз",
@@ -37972,9 +37974,9 @@
         4.1,
         4.9,
         1,
-        0.5,
+        0.6,
         1.2,
-        1.7,
+        1.6,
         1.8
       ],
       "kinds": [
@@ -37990,7 +37992,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_exports": {
       "title": "Экспорт товаров и услуг: факт и прогноз",
@@ -38016,12 +38018,12 @@
         550,
         641,
         465,
-        477,
-        468,
-        508,
-        486,
+        476,
+        466,
+        519,
         495,
-        501
+        500,
+        509
       ],
       "kinds": [
         "fact",
@@ -38036,7 +38038,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_imports": {
       "title": "Импорт товаров и услуг: факт и прогноз",
@@ -38063,11 +38065,11 @@
         347,
         380,
         383,
-        400,
-        430,
+        401,
         436,
-        446,
-        457
+        443,
+        456,
+        468
       ],
       "kinds": [
         "fact",
@@ -38082,7 +38084,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_usdrub": {
       "title": "USD/RUB: факт и прогноз",
@@ -38110,10 +38112,10 @@
         84.7,
         92.4,
         83.4,
-        79.9,
-        88.8,
-        94,
-        97.2
+        80,
+        89.4,
+        94.8,
+        96.4
       ],
       "kinds": [
         "fact",
@@ -38128,7 +38130,7 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     },
     "macro_survey_oil": {
       "title": "Нефть для налогообложения: факт и прогноз",
@@ -38156,9 +38158,9 @@
         63,
         68,
         56,
-        64,
-        56,
-        56,
+        70,
+        59,
+        57,
         56
       ],
       "kinds": [
@@ -38174,22 +38176,22 @@
       ],
       "forecast_start_year": 2026,
       "empty_message": "Прогноз появится после первого успешного обновления опроса.",
-      "survey_release_date": "2026-09-02"
+      "survey_release_date": "2026-10-14"
     }
   },
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:45+00:00",
+      "updated_at": "2026-10-14T12:28:51+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:47+00:00",
+      "updated_at": "2026-10-14T12:28:54+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-05",
       "merged_latest": "2026-10-05",
@@ -38198,7 +38200,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:45+00:00",
+      "updated_at": "2026-10-14T12:28:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38207,7 +38209,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:45+00:00",
+      "updated_at": "2026-10-14T12:28:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38216,7 +38218,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:46+00:00",
+      "updated_at": "2026-10-14T12:28:52+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38225,7 +38227,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:10+00:00",
+      "updated_at": "2026-10-14T12:31:56+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38234,7 +38236,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:10+00:00",
+      "updated_at": "2026-10-14T12:31:56+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38243,7 +38245,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:10+00:00",
+      "updated_at": "2026-10-14T12:31:56+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38252,16 +38254,16 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:10+00:00",
+      "updated_at": "2026-10-14T12:31:56+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
-      "fetched_latest": "2026-10-13",
-      "merged_latest": "2026-10-13",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-10-14",
+      "merged_latest": "2026-10-14",
+      "new_points": 1,
+      "changed_points": 1
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:10+00:00",
+      "updated_at": "2026-10-14T12:31:56+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-14",
       "merged_latest": "2026-10-14",
@@ -38270,7 +38272,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:51+00:00",
+      "updated_at": "2026-10-14T12:29:00+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-13",
       "merged_latest": "2026-10-13",
@@ -38279,7 +38281,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:53+00:00",
+      "updated_at": "2026-10-14T12:29:03+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-13",
       "merged_latest": "2026-10-13",
@@ -38288,7 +38290,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:49:11+00:00",
+      "updated_at": "2026-10-14T12:31:59+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-10-04",
       "merged_latest": "2026-10-04",
@@ -38297,7 +38299,7 @@
     },
     "production_index": {
       "state": "ok",
-      "updated_at": "2026-10-13T11:43:34+00:00",
+      "updated_at": "2026-10-14T12:29:45+00:00",
       "message": "Обновлено из официальной таблицы Росстата",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38306,7 +38308,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:45+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38315,7 +38317,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:45+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38324,7 +38326,7 @@
     },
     "road_freight": {
       "state": "ok",
-      "updated_at": "2026-10-13T11:43:25+00:00",
+      "updated_at": "2026-10-14T12:29:37+00:00",
       "message": "Обновлено из официальной таблицы Росстата",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38333,7 +38335,7 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:48+00:00",
+      "updated_at": "2026-10-14T12:28:55+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-13",
       "merged_latest": "2026-10-13",
@@ -38342,7 +38344,7 @@
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38351,7 +38353,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38360,7 +38362,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38369,7 +38371,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38378,7 +38380,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38387,7 +38389,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:46:59+00:00",
+      "updated_at": "2026-10-14T12:29:09+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-08",
       "merged_latest": "2026-10-08",
@@ -38396,75 +38398,75 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 3
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 4
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 2
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 6
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 5
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 4
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-10-14T06:47:00+00:00",
+      "updated_at": "2026-10-14T12:29:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
       "new_points": 0,
-      "changed_points": 0
+      "changed_points": 3
     }
   },
   "refresh_summary": {
-    "successes": 29,
+    "successes": 31,
     "failures": 0,
-    "skipped": 2,
+    "skipped": 0,
     "total": 31,
-    "actual_changed_points": 5,
-    "updated_at": "2026-10-14T06:49:11+00:00",
+    "actual_changed_points": 32,
+    "updated_at": "2026-10-14T12:31:59+00:00",
     "failed_sources": {}
   }
 }
