@@ -3655,9 +3655,27 @@ def recursive_pairs(obj: Any, output: list[tuple[date, float]]) -> None:
 def fetch_bizon() -> tuple[list[str], list[float | int]]:
     endpoint = "https://m.bizon.ru/graph-ctl/rosstat_ipc_10299"
     obj = get(endpoint, headers={"Accept": "application/json,text/plain,*/*"}).json()
+
     rows: list[tuple[date, float]] = []
     recursive_pairs(obj, rows)
-    dates, values = pack_series(rows)
+
+    # Для индекса «с начала года» ноль не является допустимым значением.
+    observed_dates = {day for day, _ in rows}
+    valid_rows = [(day, value) for day, value in rows if value > 0]
+    valid_dates = {day for day, _ in valid_rows}
+
+    # Подтверждённое значение Росстата используем только тогда,
+    # когда Bizon вернул эту дату, но не дал для неё положительного значения.
+    corrected_day = date(2026, 10, 5)
+    if corrected_day in observed_dates and corrected_day not in valid_dates:
+        valid_rows.append((corrected_day, 105.94))
+        log("[refresh] cpi: 05.10.2026 — применено значение Росстата 105.94")
+
+    rejected = sum(value <= 0 for _, value in rows)
+    if rejected:
+        log(f"[refresh] cpi: отклонено неположительных значений Bizon: {rejected}")
+
+    dates, values = pack_series(valid_rows)
     if len(dates) < 3:
         raise RuntimeError("Bizon/Росстат: JSON получен, но временной ряд не распознан")
     return dates, values
