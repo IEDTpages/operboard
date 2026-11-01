@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-10-31T22:01:09+00:00",
+  "generated_at": "2026-11-01T01:07:35+00:00",
   "data_as_of": "2026-10-31",
   "source_mode": "web_refresh",
   "report": {
@@ -36627,7 +36627,8 @@
         "2026-10-27",
         "2026-10-28",
         "2026-10-29",
-        "2026-10-30"
+        "2026-10-30",
+        "2026-10-31"
       ],
       "values": [
         1092,
@@ -37324,7 +37325,8 @@
         2213,
         2199,
         2186,
-        2188
+        2188,
+        2201
       ]
     },
     "erai_composite": {
@@ -38681,13 +38683,17 @@
   },
   "status": {
     "key_rate": {
-      "state": "error",
-      "updated_at": "2026-10-31T21:57:47+00:00",
-      "message": "502 Server Error: Bad Gateway for url: https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=01.01.2021&UniDbQuery.To=01.12.2026"
+      "state": "ok",
+      "updated_at": "2026-11-01T01:05:05+00:00",
+      "message": "Обновлено с веб-источника",
+      "fetched_latest": "2026-10-30",
+      "merged_latest": "2026-10-30",
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:32+00:00",
+      "updated_at": "2026-11-01T01:05:07+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-26",
       "merged_latest": "2026-10-26",
@@ -38696,7 +38702,7 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:30+00:00",
+      "updated_at": "2026-11-01T01:05:05+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-31",
       "merged_latest": "2026-10-31",
@@ -38705,7 +38711,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:30+00:00",
+      "updated_at": "2026-11-01T01:05:06+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-31",
       "merged_latest": "2026-10-31",
@@ -38714,7 +38720,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:31+00:00",
+      "updated_at": "2026-11-01T01:05:06+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-31",
       "merged_latest": "2026-10-31",
@@ -38723,7 +38729,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:00:56+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38732,7 +38738,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:00:56+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38741,7 +38747,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:00:56+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38750,7 +38756,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:00:56+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38759,7 +38765,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:00:56+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38768,7 +38774,7 @@
     },
     "wheat": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:36+00:00",
+      "updated_at": "2026-11-01T01:05:13+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38777,7 +38783,7 @@
     },
     "oil": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:38+00:00",
+      "updated_at": "2026-11-01T01:05:15+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-10-30",
       "merged_latest": "2026-10-30",
@@ -38786,7 +38792,7 @@
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-10-31T22:01:09+00:00",
+      "updated_at": "2026-11-01T01:07:35+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-10-25",
       "merged_latest": "2026-10-25",
@@ -38804,7 +38810,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:23+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38813,7 +38819,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:23+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-08-31",
       "merged_latest": "2026-08-31",
@@ -38831,16 +38837,16 @@
     },
     "ati_ftl": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:33+00:00",
+      "updated_at": "2026-11-01T01:05:09+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-10-30",
-      "merged_latest": "2026-10-30",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-10-31",
+      "merged_latest": "2026-10-31",
+      "new_points": 1,
+      "changed_points": 1
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-09-30",
       "merged_latest": "2026-09-30",
@@ -38849,7 +38855,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-29",
       "merged_latest": "2026-10-29",
@@ -38858,7 +38864,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-29",
       "merged_latest": "2026-10-29",
@@ -38867,7 +38873,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-29",
       "merged_latest": "2026-10-29",
@@ -38876,7 +38882,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-29",
       "merged_latest": "2026-10-29",
@@ -38885,7 +38891,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:45+00:00",
+      "updated_at": "2026-11-01T01:05:22+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-10-29",
       "merged_latest": "2026-10-29",
@@ -38894,7 +38900,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38903,7 +38909,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38912,7 +38918,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38921,7 +38927,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38930,7 +38936,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38939,7 +38945,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38948,7 +38954,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-10-31T21:58:46+00:00",
+      "updated_at": "2026-11-01T01:05:24+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -38957,14 +38963,12 @@
     }
   },
   "refresh_summary": {
-    "successes": 28,
-    "failures": 1,
+    "successes": 29,
+    "failures": 0,
     "skipped": 2,
     "total": 31,
-    "actual_changed_points": 0,
-    "updated_at": "2026-10-31T22:01:09+00:00",
-    "failed_sources": {
-      "key_rate": "502 Server Error: Bad Gateway for url: https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=01.01.2021&UniDbQuery.To=01.12.2026"
-    }
+    "actual_changed_points": 1,
+    "updated_at": "2026-11-01T01:07:35+00:00",
+    "failed_sources": {}
   }
 }
