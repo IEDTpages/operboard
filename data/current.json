@@ -1,6 +1,6 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-11-21T07:46:54+00:00",
+  "generated_at": "2026-11-21T15:54:32+00:00",
   "data_as_of": "2026-11-21",
   "source_mode": "web_refresh",
   "report": {
@@ -39184,17 +39184,17 @@
   "status": {
     "key_rate": {
       "state": "error",
-      "updated_at": "2026-11-21T07:34:53+00:00",
+      "updated_at": "2026-11-21T15:40:31+00:00",
       "message": "403 Client Error: Forbidden for url: https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=01.01.2021&UniDbQuery.To=22.12.2026"
     },
     "cpi": {
       "state": "error",
-      "updated_at": "2026-11-21T07:37:18+00:00",
-      "message": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Read timed out."
+      "updated_at": "2026-11-21T15:42:53+00:00",
+      "message": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Max retries exceeded with url: /graph-ctl/rosstat_ipc_10299 (Caused by ConnectTimeoutError(<HTTPSConnection(host='m.bizon.ru', port=443) at 0x7ff584e2eb40>, 'Connection to m.bizon.ru timed out. (connect timeout=45)'))"
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:34:53+00:00",
+      "updated_at": "2026-11-21T15:40:31+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-11-21",
       "merged_latest": "2026-11-21",
@@ -39203,7 +39203,7 @@
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:34:54+00:00",
+      "updated_at": "2026-11-21T15:40:31+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-11-21",
       "merged_latest": "2026-11-21",
@@ -39212,7 +39212,7 @@
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:34:54+00:00",
+      "updated_at": "2026-11-21T15:40:32+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-11-21",
       "merged_latest": "2026-11-21",
@@ -39221,7 +39221,7 @@
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-20",
       "merged_latest": "2026-11-20",
@@ -39230,7 +39230,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-20",
       "merged_latest": "2026-11-20",
@@ -39239,7 +39239,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-20",
       "merged_latest": "2026-11-20",
@@ -39248,7 +39248,7 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-20",
       "merged_latest": "2026-11-20",
@@ -39257,7 +39257,7 @@
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-20",
       "merged_latest": "2026-11-20",
@@ -39265,26 +39265,18 @@
       "changed_points": 0
     },
     "wheat": {
-      "state": "ok",
-      "updated_at": "2026-11-21T07:37:30+00:00",
-      "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-11-20",
-      "merged_latest": "2026-11-20",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "error",
+      "updated_at": "2026-11-21T15:45:22+00:00",
+      "message": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/WHFOB.json?start=0&limit=100&iss.meta=off (Caused by ConnectTimeoutError(<HTTPSConnection(host='iss.moex.com', port=443) at 0x7ff584e2d250>, 'Connection to iss.moex.com timed out. (connect timeout=45)'))"
     },
     "oil": {
-      "state": "ok",
-      "updated_at": "2026-11-21T07:38:20+00:00",
-      "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-11-20",
-      "merged_latest": "2026-11-20",
-      "new_points": 0,
-      "changed_points": 0
+      "state": "error",
+      "updated_at": "2026-11-21T15:47:43+00:00",
+      "message": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/SOEXP.json?start=0&limit=100&iss.meta=off (Caused by ConnectTimeoutError(<HTTPSConnection(host='iss.moex.com', port=443) at 0x7ff584e2dac0>, 'Connection to iss.moex.com timed out. (connect timeout=45)'))"
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:46:54+00:00",
+      "updated_at": "2026-11-21T15:54:32+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-11-15",
       "merged_latest": "2026-11-15",
@@ -39302,12 +39294,12 @@
     },
     "exports": {
       "state": "error",
-      "updated_at": "2026-11-21T07:44:37+00:00",
+      "updated_at": "2026-11-21T15:52:14+00:00",
       "message": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls"
     },
     "imports": {
       "state": "error",
-      "updated_at": "2026-11-21T07:44:37+00:00",
+      "updated_at": "2026-11-21T15:52:14+00:00",
       "message": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls"
     },
     "road_freight": {
@@ -39319,19 +39311,19 @@
     },
     "ati_ftl": {
       "state": "error",
-      "updated_at": "2026-11-21T07:37:25+00:00",
+      "updated_at": "2026-11-21T15:43:00+00:00",
       "message": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic"
     },
     "erai_composite": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:42:47+00:00",
-      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. официальный JSON: HTTPSConnectionPool(host='index1520.com', port=443): Read timed out.; резервный график: Page.goto: Timeout 120000ms exceeded.\nCall log:\n  - navigating to \"https://index1520.com/\", waiting until \"domcontentloaded\"\n",
-      "last_success_at": "2026-11-21T00:28:18+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
+      "message": "Источник временно недоступен; сохранены последние успешно полученные данные. официальный JSON: HTTPSConnectionPool(host='index1520.com', port=443): Max retries exceeded with url: /ajax/index-quotes.php?page=main&lang=ru (Caused by ConnectTimeoutError(<HTTPSConnection(host='index1520.com', port=443) at 0x7ff584e2eba0>, 'Connection to index1520.com timed out. (connect timeout=45)')); резервный график: Page.goto: Timeout 120000ms exceeded.\nCall log:\n  - navigating to \"https://index1520.com/\", waiting until \"domcontentloaded\"\n",
+      "last_success_at": "2026-11-21T07:42:47+00:00",
       "merged_latest": "2026-10-31"
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:42:47+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39340,7 +39332,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:42:47+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39349,7 +39341,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:42:47+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39358,7 +39350,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:42:47+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39367,7 +39359,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-11-21T07:42:47+00:00",
+      "updated_at": "2026-11-21T15:52:08+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39376,67 +39368,68 @@
     },
     "macro_survey_cpi": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_key_rate": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_gdp": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_exports": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_imports": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_usdrub": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     },
     "macro_survey_oil": {
       "state": "stale",
-      "updated_at": "2026-11-21T07:44:43+00:00",
+      "updated_at": "2026-11-21T15:52:21+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. 403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
-      "last_success_at": "2026-11-21T00:28:30+00:00",
+      "last_success_at": "2026-11-21T07:44:43+00:00",
       "merged_latest": "2029-12-31"
     }
   },
   "refresh_summary": {
-    "successes": 17,
-    "failures": 14,
-    "skipped": 0,
+    "successes": 14,
+    "failures": 15,
+    "skipped": 2,
     "total": 31,
     "actual_changed_points": 0,
-    "updated_at": "2026-11-21T07:46:54+00:00",
+    "updated_at": "2026-11-21T15:54:32+00:00",
     "failed_sources": {
       "key_rate": "403 Client Error: Forbidden for url: https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=01.01.2021&UniDbQuery.To=22.12.2026",
-      "cpi": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Read timed out.",
+      "cpi": "HTTPSConnectionPool(host='m.bizon.ru', port=443): Max retries exceeded with url: /graph-ctl/rosstat_ipc_10299 (Caused by ConnectTimeoutError(<HTTPSConnection(host='m.bizon.ru', port=443) at 0x7ff584e2eb40>, 'Connection to m.bizon.ru timed out. (connect timeout=45)'))",
       "ati_ftl": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic",
-      "erai_composite": "официальный JSON: HTTPSConnectionPool(host='index1520.com', port=443): Read timed out.; резервный график: Page.goto: Timeout 120000ms exceeded.\nCall log:\n  - navigating to \"https://index1520.com/\", waiting until \"domcontentloaded\"\n",
-      "road_freight": "Росстат: месячные данные автоперевозок не получены: PerevGruz_12-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_12-2025.xlsx; PerevGruz_11-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_11-2025.xlsx; PerevGruz_10-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_10-2025.xlsx; PerevGruz_09-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_09-2025.xlsx; PerevGruz_08-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_08-2025.xlsx; PerevGruz_07-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_07-2025.xlsx; PerevGruz_06-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_06-2025.xlsx; PerevGruz_05-2025.xlsx: 404 Client Error: Not Found for url: https",
+      "wheat": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/WHFOB.json?start=0&limit=100&iss.meta=off (Caused by ConnectTimeoutError(<HTTPSConnection(host='iss.moex.com', port=443) at 0x7ff584e2d250>, 'Connection to iss.moex.com timed out. (connect timeout=45)'))",
+      "oil": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/SOEXP.json?start=0&limit=100&iss.meta=off (Caused by ConnectTimeoutError(<HTTPSConnection(host='iss.moex.com', port=443) at 0x7ff584e2dac0>, 'Connection to iss.moex.com timed out. (connect timeout=45)'))",
+      "erai_composite": "официальный JSON: HTTPSConnectionPool(host='index1520.com', port=443): Max retries exceeded with url: /ajax/index-quotes.php?page=main&lang=ru (Caused by ConnectTimeoutError(<HTTPSConnection(host='index1520.com', port=443) at 0x7ff584e2eba0>, 'Connection to index1520.com timed out. (connect timeout=45)')); резервный график: Page.goto: Timeout 120000ms exceeded.\nCall log:\n  - navigating to \"https://index1520.com/\", waiting until \"domcontentloaded\"\n",
       "exports": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
       "imports": "403 Client Error: Forbidden for url: https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade.xls",
       "macro_survey_cpi": "403 Client Error: Forbidden for url: https://www.cbr.ru/statistics/ddkp/mo_br/",
