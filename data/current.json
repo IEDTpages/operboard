@@ -1,7 +1,7 @@
 {
   "schema_version": 8,
-  "generated_at": "2026-11-25T11:37:34+00:00",
-  "data_as_of": "2026-11-25",
+  "generated_at": "2026-11-25T20:45:59+00:00",
+  "data_as_of": "2026-11-26",
   "source_mode": "web_refresh",
   "report": {
     "title": "Мониторинг показателей российской экономики и мировых товарных рынков",
@@ -4814,7 +4814,8 @@
         "2026-11-20",
         "2026-11-21",
         "2026-11-24",
-        "2026-11-25"
+        "2026-11-25",
+        "2026-11-26"
       ],
       "values": [
         73.8757,
@@ -6274,7 +6275,8 @@
         81.929,
         82.1911,
         82.1488,
-        82.1664
+        82.1664,
+        82.313
       ]
     },
     "rubeur": {
@@ -7747,7 +7749,8 @@
         "2026-11-20",
         "2026-11-21",
         "2026-11-24",
-        "2026-11-25"
+        "2026-11-25",
+        "2026-11-26"
       ],
       "values": [
         90.7932,
@@ -9207,7 +9210,8 @@
         89.8597,
         90.3445,
         90.2815,
-        89.8818
+        89.8818,
+        90.2397
       ]
     },
     "rubcny": {
@@ -10680,7 +10684,8 @@
         "2026-11-20",
         "2026-11-21",
         "2026-11-24",
-        "2026-11-25"
+        "2026-11-25",
+        "2026-11-26"
       ],
       "values": [
         11.2956,
@@ -12140,7 +12145,8 @@
         12.2546,
         12.2759,
         12.2615,
-        12.2767
+        12.2767,
+        12.3154
       ]
     },
     "brent": {
@@ -15267,7 +15273,7 @@
         91.84,
         89.32,
         90.91,
-        91.22
+        94.3
       ]
     },
     "urals": {
@@ -18930,7 +18936,7 @@
         74.86,
         71.67,
         70.88,
-        72.79
+        75.81
       ]
     },
     "ttf": {
@@ -22055,7 +22061,7 @@
         1068.03,
         994.53,
         1032.43,
-        987.86
+        997.36
       ]
     },
     "ara": {
@@ -22442,7 +22448,7 @@
         130.8,
         134,
         135.5,
-        133.25
+        133.5
       ]
     },
     "lme": {
@@ -25529,7 +25535,7 @@
         2847.25,
         2858.5,
         2778.25,
-        2752.5
+        2798
       ]
     },
     "wheat": {
@@ -39282,16 +39288,16 @@
   "status": {
     "key_rate": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:34:44+00:00",
+      "updated_at": "2026-11-25T20:42:04+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
-      "new_points": 1,
-      "changed_points": 1
+      "new_points": 0,
+      "changed_points": 0
     },
     "cpi": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:34:47+00:00",
+      "updated_at": "2026-11-25T20:42:07+00:00",
       "message": "Обновлено с веб-источника",
       "fetched_latest": "2026-11-16",
       "merged_latest": "2026-11-16",
@@ -39300,34 +39306,34 @@
     },
     "rubusd": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:34:45+00:00",
+      "updated_at": "2026-11-25T20:42:04+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-11-25",
-      "merged_latest": "2026-11-25",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-11-26",
+      "merged_latest": "2026-11-26",
+      "new_points": 1,
+      "changed_points": 1
     },
     "rubeur": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:34:45+00:00",
+      "updated_at": "2026-11-25T20:42:05+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-11-25",
-      "merged_latest": "2026-11-25",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-11-26",
+      "merged_latest": "2026-11-26",
+      "new_points": 1,
+      "changed_points": 1
     },
     "rubcny": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:34:45+00:00",
+      "updated_at": "2026-11-25T20:42:05+00:00",
       "message": "Обновлено с веб-источника",
-      "fetched_latest": "2026-11-25",
-      "merged_latest": "2026-11-25",
-      "new_points": 0,
-      "changed_points": 0
+      "fetched_latest": "2026-11-26",
+      "merged_latest": "2026-11-26",
+      "new_points": 1,
+      "changed_points": 1
     },
     "brent": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:33+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
@@ -39336,7 +39342,7 @@
     },
     "urals": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:33+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
@@ -39345,7 +39351,7 @@
     },
     "ttf": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:33+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
@@ -39354,16 +39360,16 @@
     },
     "ara": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:33+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
-      "new_points": 1,
+      "new_points": 0,
       "changed_points": 1
     },
     "lme": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:33+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено из таблицы ProFinance через Chromium",
       "fetched_latest": "2026-11-25",
       "merged_latest": "2026-11-25",
@@ -39372,17 +39378,17 @@
     },
     "wheat": {
       "state": "error",
-      "updated_at": "2026-11-25T11:35:03+00:00",
+      "updated_at": "2026-11-25T20:42:23+00:00",
       "message": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/WHFOB.json?start=0&limit=100&iss.meta=off (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1011)')))"
     },
     "oil": {
       "state": "error",
-      "updated_at": "2026-11-25T11:35:12+00:00",
+      "updated_at": "2026-11-25T20:42:32+00:00",
       "message": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/SOEXP.json?start=0&limit=100&iss.meta=off (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1011)')))"
     },
     "hormuz": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:37:34+00:00",
+      "updated_at": "2026-11-25T20:45:59+00:00",
       "message": "Обновлено с ArcGIS / IMF PortWatch",
       "fetched_latest": "2026-11-22",
       "merged_latest": "2026-11-22",
@@ -39391,7 +39397,7 @@
     },
     "production_index": {
       "state": "ok",
-      "updated_at": "2026-11-24T18:17:57+00:00",
+      "updated_at": "2026-11-25T20:43:44+00:00",
       "message": "Обновлено из официальной таблицы Росстата",
       "fetched_latest": "2026-09-30",
       "merged_latest": "2026-09-30",
@@ -39400,7 +39406,7 @@
     },
     "exports": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-09-30",
       "merged_latest": "2026-09-30",
@@ -39409,7 +39415,7 @@
     },
     "imports": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из ежемесячной книги внешней торговли товарами ЦБ РФ",
       "fetched_latest": "2026-09-30",
       "merged_latest": "2026-09-30",
@@ -39418,19 +39424,19 @@
     },
     "road_freight": {
       "state": "stale",
-      "updated_at": "2026-11-24T18:17:28+00:00",
+      "updated_at": "2026-11-25T20:43:12+00:00",
       "message": "Источник временно недоступен; сохранены последние успешно полученные данные. Росстат: месячные данные автоперевозок не получены: PerevGruz_12-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_12-2025.xlsx; PerevGruz_11-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_11-2025.xlsx; PerevGruz_10-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_10-2025.xlsx; PerevGruz_09-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_09-2025.xlsx; PerevGruz_08-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_08-2025.xlsx; PerevGruz_07-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_07-2025.xlsx; PerevGruz_06-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_06-",
-      "last_success_at": "2026-11-23T11:22:34+00:00",
+      "last_success_at": "2026-11-24T18:17:28+00:00",
       "merged_latest": "2026-09-30"
     },
     "ati_ftl": {
       "state": "error",
-      "updated_at": "2026-11-25T11:34:55+00:00",
+      "updated_at": "2026-11-25T20:42:14+00:00",
       "message": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic"
     },
     "erai_composite": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального JSON index1520.com",
       "fetched_latest": "2026-10-31",
       "merged_latest": "2026-10-31",
@@ -39439,7 +39445,7 @@
     },
     "wci_composite": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39448,7 +39454,7 @@
     },
     "wci_shanghai_rotterdam": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39457,7 +39463,7 @@
     },
     "wci_shanghai_genoa": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39466,7 +39472,7 @@
     },
     "wci_shanghai_los_angeles": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39475,7 +39481,7 @@
     },
     "wci_shanghai_new_york": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:42:38+00:00",
       "message": "Обновлено из официального графика",
       "fetched_latest": "2026-11-19",
       "merged_latest": "2026-11-19",
@@ -39484,7 +39490,7 @@
     },
     "macro_survey_cpi": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39493,7 +39499,7 @@
     },
     "macro_survey_key_rate": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39502,7 +39508,7 @@
     },
     "macro_survey_gdp": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39511,7 +39517,7 @@
     },
     "macro_survey_exports": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39520,7 +39526,7 @@
     },
     "macro_survey_imports": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39529,7 +39535,7 @@
     },
     "macro_survey_usdrub": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39538,7 +39544,7 @@
     },
     "macro_survey_oil": {
       "state": "ok",
-      "updated_at": "2026-11-25T11:35:18+00:00",
+      "updated_at": "2026-11-25T20:43:46+00:00",
       "message": "Обновлено из макроэкономического опроса Банка России",
       "fetched_latest": "2029-12-31",
       "merged_latest": "2029-12-31",
@@ -39547,16 +39553,17 @@
     }
   },
   "refresh_summary": {
-    "successes": 26,
-    "failures": 3,
-    "skipped": 2,
+    "successes": 27,
+    "failures": 4,
+    "skipped": 0,
     "total": 31,
-    "actual_changed_points": 6,
-    "updated_at": "2026-11-25T11:37:34+00:00",
+    "actual_changed_points": 8,
+    "updated_at": "2026-11-25T20:45:59+00:00",
     "failed_sources": {
       "ati_ftl": "401 Client Error: Unauthorized for url: https://api.ati.su/index/license/v1/general_index_dynamic",
       "wheat": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/WHFOB.json?start=0&limit=100&iss.meta=off (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1011)')))",
-      "oil": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/SOEXP.json?start=0&limit=100&iss.meta=off (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1011)')))"
+      "oil": "HTTPSConnectionPool(host='iss.moex.com', port=443): Max retries exceeded with url: /iss/history/engines/stock/markets/index/securities/SOEXP.json?start=0&limit=100&iss.meta=off (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1011)')))",
+      "road_freight": "Росстат: месячные данные автоперевозок не получены: PerevGruz_12-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_12-2025.xlsx; PerevGruz_11-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_11-2025.xlsx; PerevGruz_10-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_10-2025.xlsx; PerevGruz_09-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_09-2025.xlsx; PerevGruz_08-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_08-2025.xlsx; PerevGruz_07-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_07-2025.xlsx; PerevGruz_06-2025.xlsx: 404 Client Error: Not Found for url: https://rosstat.gov.ru/storage/mediabank/PerevGruz_06-2025.xlsx; PerevGruz_05-2025.xlsx: 404 Client Error: Not Found for url: https"
     }
   }
 }
